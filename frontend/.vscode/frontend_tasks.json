@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Run Frontend (Streamlit)",
+      "type": "shell",
+      "command": "cd frontend && streamlit run app.py",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

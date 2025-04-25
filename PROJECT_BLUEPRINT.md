@@ -1,70 +1,101 @@
-# 🚀 HOI InsolvencyBot - Backend Blueprint
+# 🚀 CodexContinue - AI Dev Assistant Platform Blueprint
 
 ## 🎯 Purpose
-This repository contains the FastAPI backend for the HOI InsolvencyBot project.  
-The backend is responsible for:
-- Serving RESTful API endpoints for frontend communication
-- Managing interaction with AI/LLM models
-- Handling file uploads, authentication (future), and messaging
-- Being easily deployable to Azure, AWS, or VPS environments
-- Remaining lightweight, portable, and developer-friendly
+
+This repository is for building **CodexContinue**, your own self-hosted AI development assistant platform — inspired by **Continue.dev** and **Cursor.com**.
+
+The backend and frontend combined will:
+
+- Offer an **AI-powered in-editor assistant**
+- Support **Free / Pro / Business** pricing plans
+- Be completely containerized (via Dev Containers)
+- Be suitable for **local development** and **cloud deployment** (Azure, AWS, VPS)
+- Support multiple LLMs (OpenAI, Azure OpenAI, Ollama, TabbyML, etc.)
 
 ---
 
 ## 📂 Full Project Structure (Detailed)
 
-backend/
-├── .devcontainer/                     # ⚙️ Configuration for VSCode Remote Containers
-│   └── devcontainer.json              # - Defines container image, settings, extensions
-├── .vscode/                           # ⚙️ Local VSCode IDE configs
-│   ├── launch.json                    # - Debugger configurations
-│   └── tasks.json                     # - Tasks like run server, lint, format
-├── .github/workflows/                 # 🔁 GitHub Actions CI/CD workflows
-│   └── deploy-backend.yml             # - Future automation for backend deployment
-├── app/                               # 🧠 Core FastAPI application
-│   ├── __init__.py                    # - Mark as Python package
-│   ├── main.py                        # - FastAPI app instance + root route
-│   └── routes/                        # - Routes subfolder
-│       └── example.py                 # - Example endpoint (e.g., health check)
-├── tests/                             # 🧪 Unit and integration tests (using pytest)
-│   └── test_example.py                # - Example test
-├── requirements.txt                   # 📦 Python project dependencies
-├── Dockerfile                         # 🐳 Docker containerization config (optional)
-├── README.md                          # 📝 Main project documentation
-├── PROJECT_BLUEPRINT.md               # 📘 This permanent memory file
+\`\`\`
+CodexContinue/
+├── .devcontainer/                     # VSCode Remote Container config
+│   └── devcontainer.json              # - Defines container setup
+├── .vscode/                           # VSCode tasks and debugger
+│   ├── launch.json                    # - Debugger config
+│   └── tasks.json                     # - CLI tasks
+├── .github/workflows/                 # CI/CD Workflows (GitHub Actions)
+│   ├── deploy-backend.yml             # - Deployment workflow (coming soon)
+│   └── test.yml                       # - Run lint/tests on PRs
+├── backend/                           # FastAPI Application (LLM Gateway)
+│   ├── app/                           #   - Core FastAPI source code
+│   │   ├── main.py                    #     - App root & router includes
+│   │   ├── routes/                    #     - API endpoints (chat, auth...)
+│   │   ├── services/                  #     - GPT, LLM service wrappers
+│   │   └── utils/                     #     - Helper functions
+│   ├── requirements.txt               #   - Python dependencies
+│   ├── Dockerfile                     #   - Optional containerization
+│   └── tests/                         #   - Unit & integration tests
+├── frontend/                          # Frontend Web Interface (TBD)
+│   └── README.md                      # Placeholder (React, Streamlit, etc.)
+├── docs/                              # Internal docs & business strategy
+│   ├── SaaS_Plans.md                  # Pricing model: Free, Pro, Business
+│   └── Setup_Guide.md                 # Dev onboarding / architecture
+├── README.md                          # General readme
+└── PROJECT_BLUEPRINT.md               # 🔥 Permanent memory anchor (this file)
+\`\`\`
 
 ---
 
 ## 🌐 Deployment Options
 
-- Azure App Service (Python runtime)
-- Azure App Service (Docker container from repo)
-- AWS EC2 / Lightsail with Docker Compose
-- Traditional VPS with manual Docker install
-- Future Serverless (Azure Functions, AWS Lambda)
+- Azure App Service (Python or Docker)
+- AWS EC2 / Lightsail
+- Fly.io / Railway.app / Render
+- Docker Compose for local testing
+- GitHub Codespaces or Dev Container
+
+---
+
+## 💳 SaaS Tiers (From \`docs/SaaS_Plans.md\`)
+
+| Plan     | Description                         | Features                                 |
+| -------- | ----------------------------------- | ---------------------------------------- |
+| Free     | Limited usage + OpenAI keys only    | Chat, Autocomplete, Docs                 |
+| Pro      | Unlimited LLM access + local models | All features + local Ollama, TabbyML     |
+| Business | Team support, APIs, telemetry       | Org dashboards, Azure OpenAI, API tokens |
 
 ---
 
 ## 🔥 Status Tracker
 
-- [x] Devcontainer Setup Complete
-- [x] FastAPI App Running Locally
-- [ ] GitHub Actions CI/CD Ready
-- [ ] Remote Deployment Setup
-- [ ] Frontend UI Connection
-- [ ] Authentication & Security
-- [ ] Scalability Enhancements (Docker/Kubernetes optional)
+- [x] Devcontainer Setup
+- [x] Backend running with FastAPI
+- [ ] Frontend UI starter (TBD)
+- [ ] CI/CD pipelines (GitHub Actions)
+- [ ] Multi-LLM integration (Azure OpenAI, Ollama)
+- [ ] Billing Integration (Stripe/Fake API)
+- [ ] Full SaaS Launch
 
 ---
 
-## 💡 Future Enhancements
+## 💡 Long-Term Goals
 
-- OpenAPI Docs Customization
-- Secure API keys / environment configs
-- Proper Error Handling & Middlewares
-- Logging & Monitoring (Azure Monitor or Prometheus)
-- API Rate Limiting
-- CI/CD Full Auto Deploy to Production
-- Extend AI Functionality (prompting, chat memory)
+- Real-time chat UI (Next.js or Streamlit)
+- Workspace memory + chat history per user
+- Multi-model routing (e.g., GPT-4, Mistral, Claude)
+- Local LLM fallback (Ollama, TabbyML)
+- VSCode Extension integration
+- Full telemetry, analytics, and monitoring
 
 ---
+
+## 🧠 Developer Notes
+
+- This blueprint is **always up to date** with your real intent
+- It is the single source of truth for current progress
+- Any LLM reading this file will instantly know your project direction
+- All copilots (GitHub Copilot, Cursor, TabbyML, Ollama) will **read this first** when helping.
+
+---
+
+> 🛡️ Saved by Captain Mo + Copilot. Updated: 2025
