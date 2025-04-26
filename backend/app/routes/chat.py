@@ -1,39 +1,39 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-import os
+# backend/app/routes/chat.py
+
+from fastapi import APIRouter, Request
 import openai
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from app.memory import ChatMemory
 
 router = APIRouter()
 
-class ChatRequest(BaseModel):
-    message: str
+memory = ChatMemory()  # 🧠 Initialize memory
 
-class ChatResponse(BaseModel):
-    reply: str
+@router.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_input = data.get("message")
+    session_id = data.get("session_id", "default")  # 🆔 Get session ID, or fallback to "default"
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    try:
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are CodexContinue, a brilliant developer assistant."},
-                {"role": "user", "content": request.message},
-            ],
-            temperature=0.3,
-            max_tokens=500,
-        )
-        bot_reply = response.choices[0].message.content.strip()
-    except Exception as e:
-        bot_reply = f"Error: {str(e)}"
+    if not user_input:
+        return {"error": "Message is required."}
 
-    return ChatResponse(reply=bot_reply)
+    # Save user message in session memory
+    memory.add_message(session_id, "user", user_input)
+
+    # Get OpenAI response
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=memory.get_messages(session_id),
+    )
+
+    assistant_reply = response.choices[0].message.content
+
+    # Save assistant message in session memory
+    memory.add_message(session_id, "assistant", assistant_reply)
+
+    return {"response": assistant_reply}
+
+
 
 
 
