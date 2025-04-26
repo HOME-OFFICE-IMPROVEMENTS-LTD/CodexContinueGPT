@@ -1,17 +1,65 @@
 import streamlit as st
-import requests
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
 
-st.set_page_config(page_title="CodexContinue", layout="wide")
+# Load environment variables
+load_dotenv()
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
-st.title("🤖 CodexContinue - Developer Assistant")
+# Initialize the OpenAI client
+client = OpenAI(api_key=openai_api_key)
 
-query = st.text_area("Ask the assistant anything about your code:")
+# Streamlit app
+st.title("Chat with OpenAI 🤖")
+st.write("Ask anything and get a response from OpenAI's GPT model!")
 
-if st.button("Ask"):
-    with st.spinner("Thinking..."):
-        try:
-            res = requests.post("http://localhost:8000/chat", json={"message": query})
-            res.raise_for_status()
-            st.success(f"🧠 Response: {res.json()['reply']}")
-        except Exception as e:
-            st.error(f"🚨 Request failed: {e}")
+# Initialize session state for conversation history
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "system", "content": "You are a helpful assistant."}]
+
+# User input
+user_input = st.text_input("Your message:", key="user_input")
+
+if st.button("Send"):
+    if user_input:
+        # Add user message to conversation history
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        # Get response from OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=st.session_state.messages
+        )
+
+        # Add assistant response to conversation history
+        assistant_message = response.choices[0].message.content
+        st.session_state.messages.append({"role": "assistant", "content": assistant_message})
+
+# Display conversation history
+st.write("### Conversation")
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.write(f"**You:** {message['content']}")
+    else:
+        st.write(f"**Assistant:** {message['content']}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
