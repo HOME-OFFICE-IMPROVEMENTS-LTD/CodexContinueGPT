@@ -1,65 +1,39 @@
+# backend/frontend/app.py
+
 import streamlit as st
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
+import requests
+import uuid
 
-# Load environment variables
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
+# Backend API URL
+BACKEND_URL = "http://localhost:8000/chat"
 
-# Initialize the OpenAI client
-client = OpenAI(api_key=openai_api_key)
+# Initialize Session State
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
-# Streamlit app
-st.title("Chat with OpenAI 🤖")
-st.write("Ask anything and get a response from OpenAI's GPT model!")
+st.title("🧠 CodexContinue Assistant")
 
-# Initialize session state for conversation history
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "system", "content": "You are a helpful assistant."}]
-
-# User input
+# Text input for user
 user_input = st.text_input("Your message:", key="user_input")
 
 if st.button("Send"):
-    if user_input:
-        # Add user message to conversation history
-        st.session_state.messages.append({"role": "user", "content": user_input})
-
-        # Get response from OpenAI
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=st.session_state.messages
-        )
-
-        # Add assistant response to conversation history
-        assistant_message = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": assistant_message})
-
-# Display conversation history
-st.write("### Conversation")
-for message in st.session_state.messages:
-    if message["role"] == "user":
-        st.write(f"**You:** {message['content']}")
+    if user_input.strip() == "":
+        st.warning("Please enter a message.")
     else:
-        st.write(f"**Assistant:** {message['content']}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # Send request to backend
+        try:
+            response = requests.post(
+                BACKEND_URL,
+                json={
+                    "session_id": st.session_state.session_id,
+                    "message": user_input
+                }
+            )
+            if response.status_code == 200:
+                data = response.json()
+                assistant_reply = data.get("reply", "")
+                st.success(f"🤖 Assistant: {assistant_reply}")
+            else:
+                st.error(f"Backend error: {response.status_code}")
+        except Exception as e:
+            st.error(f"Request failed: {str(e)}")

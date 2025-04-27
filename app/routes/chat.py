@@ -1,39 +1,39 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-import os
-import openai
-from dotenv import load_dotenv
+# app/routes/chat.py
 
-# Load environment variables
-load_dotenv()
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from fastapi import APIRouter, Request
+from app.chat_memory import memory
+from app.config import OPENAI_API_KEY
+from openai import AsyncOpenAI
 
 router = APIRouter()
 
-class ChatRequest(BaseModel):
-    message: str
+# Create OpenAI client
+client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-class ChatResponse(BaseModel):
-    reply: str
+@router.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_input = data.get("message")
+    session_id = data.get("session_id", "default")
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    user_message = request.message
+    if not user_input:
+        return {"error": "Message is required."}
 
-    try:
-        response = await openai.chat.completions.acreate(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are CodexContinue, an intelligent developer assistant. Answer accurately and helpfully."},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.3,
-            max_tokens=500,
-        )
-        bot_reply = response.choices[0].message.content.strip()
+    # Save user message to memory
+    memory.add_message(session_id, "user", user_input)
 
-    except Exception as e:
-        bot_reply = f"Error contacting AI: {str(e)}"
+    # Prepare conversation
+    conversation = memory.get_messages(session_id)
 
-    return ChatResponse(reply=bot_reply)
+    # Ask OpenAI
+    response = await client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=conversation,
+    )
+
+    assistant_reply = response.choices[0].message.content
+
+    # Save assistant reply to memory
+    memory.add_message(session_id, "assistant", assistant_reply)
+
+    return {"reply": assistant_reply}
