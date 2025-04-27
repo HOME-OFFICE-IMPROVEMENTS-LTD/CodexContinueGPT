@@ -34,11 +34,10 @@ This document helps new contributors spin up the project fast!
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ```
 
-5. **(Future) Run Frontend**
+5. **Run Frontend (Streamlit App)**
     ```bash
     cd frontend
-    npm install
-    npm run dev
+    streamlit run app.py
     ```
 
 ---
@@ -47,7 +46,7 @@ This document helps new contributors spin up the project fast!
 
 When ready to deploy:
 - **Backend**: Docker build + push or use Azure WebApp
-- **Frontend**: Vercel, Netlify, Azure Static WebApps
+- **Frontend**: Deploy Streamlit app to Streamlit Cloud or Azure Static WebApps
 - **CI/CD**: GitHub Actions (test + deploy)
 
 ---
@@ -59,6 +58,13 @@ When ready to deploy:
 - `MODEL_PROVIDER` (e.g., "openai" or "ollama")
 
 **Put them inside `.env` files locally and in the cloud.**
+
+---
+
+## 📚 Optional Useful Resources
+
+- [🛠️ Git Workflow Cheatsheet](Git_Workflow_Cheatsheet.md)
+- [🛠️ Developer Commands Cheatsheet](Developer_Commands_Cheatsheet.md)
 
 ---
 
