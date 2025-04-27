@@ -8,33 +8,40 @@ import logging
 
 router = APIRouter()
 
+# Initialize OpenAI client
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+# Logger setup
+logger = logging.getLogger(__name__)
 
 @router.post("/chat")
 async def chat(request: Request):
     try:
         data = await request.json()
-        user_input = data.get("message")
         session_id = data.get("session_id", "default")
+        user_input = data.get("message")
 
         if not user_input:
-            raise HTTPException(status_code=400, detail="Message is required.")
+            raise HTTPException(status_code=400, detail="Missing 'message' field in request.")
 
+        # Save user message to memory
         memory.add_message(session_id, "user", user_input)
 
+        # Call OpenAI asynchronously
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=memory.get_messages(session_id),
         )
 
         assistant_reply = response.choices[0].message.content
+
+        # Save assistant reply to memory
         memory.add_message(session_id, "assistant", assistant_reply)
 
-        return {"reply": assistant_reply}
+        return {"session_id": session_id, "reply": assistant_reply}
 
-    except HTTPException as http_exc:
-        raise http_exc
-
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        logging.error(f"Chat endpoint error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        logger.error(f"Chat endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error. Please try again later.")
