@@ -4,7 +4,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from app.chat_memory import memory
 from app.config import OPENAI_API_KEY
-from openai import AsyncOpenAI, OpenAIError
+from openai import AsyncOpenAI
+import uuid
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -13,27 +14,28 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 async def chat(request: Request):
     try:
         data = await request.json()
-        session_id = data.get("session_id", "default")
-        user_message = data.get("message")
+        user_input = data.get("message")
+        session_id = data.get("session_id", str(uuid.uuid4()))
 
-        if not user_message:
-            return JSONResponse(status_code=400, content={"error": "Message field is required."})
+        if not user_input:
+            return JSONResponse(status_code=400, content={"error": "Missing message content"})
 
-        memory.add_message(session_id, "user", user_message)
+        # Save user input in memory
+        memory.add_message(session_id, "user", user_input)
+        messages = memory.get_messages(session_id)
 
-        # 🤖 Call OpenAI
+        # Call OpenAI (default: gpt-3.5-turbo)
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(session_id)
+            messages=messages
         )
 
         assistant_reply = response.choices[0].message.content.strip()
+
+        # Save reply in memory
         memory.add_message(session_id, "assistant", assistant_reply)
 
-        return JSONResponse(status_code=200, content={"reply": assistant_reply})
-
-    except OpenAIError as oe:
-        return JSONResponse(status_code=502, content={"error": f"OpenAI Error: {str(oe)}"})
+        return {"reply": assistant_reply, "session_id": session_id}
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Internal Server Error: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": str(e)})
