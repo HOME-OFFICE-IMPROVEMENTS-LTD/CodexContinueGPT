@@ -1,48 +1,41 @@
 # app/services/model_router.py
 
 from app.config import MODEL_PROVIDER, OPENAI_API_KEY
-from fastapi import HTTPException
+from app.chat_memory import memory
+from typing import List
 from openai import AsyncOpenAI
+import httpx
 
-# Create OpenAI Async Client
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-
-async def route_prompt(session_id: str, messages: list) -> dict:
-    """
-    Routes the incoming prompt to the correct LLM provider based on MODEL_PROVIDER.
-    Returns a standardized dict {reply: str, usage: dict}.
-    """
-    try:
+class ModelRouter:
+    def __init__(self):
         if MODEL_PROVIDER == "openai":
-            return await query_openai(messages)
+            self.client = AsyncOpenAI(api_key=OPENAI_API_KEY)
         elif MODEL_PROVIDER == "azure":
-            return await query_azure_openai(messages)
+            # Azure-specific initialization (placeholder for future)
+            self.client = AsyncOpenAI(api_key=OPENAI_API_KEY)  # Temporary same as OpenAI
         elif MODEL_PROVIDER == "ollama":
-            return await query_ollama(messages)
+            self.client = None  # Ollama does not need client
         else:
-            raise HTTPException(status_code=500, detail=f"❌ Unknown MODEL_PROVIDER: {MODEL_PROVIDER}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"🛡️ LLM Routing Error: {str(e)}")
+            raise ValueError(f"Unsupported MODEL_PROVIDER: {MODEL_PROVIDER}")
 
-async def query_openai(messages: list) -> dict:
-    try:
-        response = await openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.7,
-            stream=False,
-        )
-        return {
-            "reply": response.choices[0].message.content,
-            "usage": response.usage.model_dump() if hasattr(response, 'usage') else {}
-        }
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"🔌 OpenAI Query Failed: {str(e)}")
+    async def generate_response(self, session_id: str, messages: List[dict]) -> str:
+        if MODEL_PROVIDER in ["openai", "azure"]:
+            response = await self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+            )
+            return response.choices[0].message.content
+        
+        elif MODEL_PROVIDER == "ollama":
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "http://localhost:11434/api/chat",
+                    json={"model": "llama3", "messages": messages},
+                    timeout=60
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["message"]["content"]
 
-async def query_azure_openai(messages: list) -> dict:
-    # 🚧 Future Azure Integration
-    raise HTTPException(status_code=501, detail="Azure OpenAI integration coming soon. 🚀")
-
-async def query_ollama(messages: list) -> dict:
-    # 🚧 Future Ollama Integration
-    raise HTTPException(status_code=501, detail="Ollama (local LLM) integration coming soon. 🧠")
+        else:
+            raise ValueError("Invalid MODEL_PROVIDER configured.")
