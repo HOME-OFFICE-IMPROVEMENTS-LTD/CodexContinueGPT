@@ -3,27 +3,17 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
-class BaseMemoryBrain(ABC):
-    """
-    Abstract interface for all memory brain implementations.
-    """
+class CodexTool(ABC):
+    """Abstract base for all tools/plugins used by CodexContinueGPT."""
 
     @abstractmethod
-    def add_message(self, session_id: str, role: str, message: str) -> None:
-        """Add a message to a session."""
+    async def run(self, prompt: str, session_id: str) -> str:
+        """Execute the tool logic and return output."""
         pass
 
-    @abstractmethod
-    def get_messages(self, session_id: str) -> List[Dict[str, str]]:
-        """Retrieve the message history for a session."""
-        pass
+class CodexResponse:
+    """A structured response returned by the brain kernel."""
 
-    @abstractmethod
-    def clear_session(self, session_id: str) -> None:
-        """Clear all messages from a session."""
-        pass
-
-    @abstractmethod
-    def list_sessions(self) -> List[str]:
-        """List all active session IDs."""
-        pass
+    def __init__(self, reply: str, thoughts: Dict = None):
+        self.reply = reply
+        self.thoughts = thoughts or {}
