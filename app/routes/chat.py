@@ -1,7 +1,6 @@
 # app/routes/chat.py
 
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse
 from app.chat_memory import memory
 from app.config import OPENAI_API_KEY
 from openai import AsyncOpenAI, OpenAIError
@@ -17,21 +16,25 @@ async def chat(request: Request):
         session_id = data.get("session_id", "default")
 
         if not user_input:
-            raise HTTPException(status_code=422, detail="User message is required.")
+            raise HTTPException(status_code=400, detail="Message is required.")
 
+        # Save user message
         memory.add_message(session_id, "user", user_input)
 
+        # Call OpenAI API
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=memory.get_messages(session_id),
         )
+
         assistant_reply = response.choices[0].message.content
+
+        # Save assistant reply
         memory.add_message(session_id, "assistant", assistant_reply)
 
-        return JSONResponse(content={"reply": assistant_reply}, status_code=200)
+        return {"reply": assistant_reply}
 
     except OpenAIError as oe:
-        raise HTTPException(status_code=502, detail=f"OpenAI Error: {str(oe)}")
-
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {str(oe)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
