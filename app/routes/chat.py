@@ -1,9 +1,11 @@
 # app/routes/chat.py
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from app.chat_memory import memory
-from app.config import MODEL_PROVIDER, OPENAI_API_KEY
+from app.config import OPENAI_API_KEY
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -16,15 +18,15 @@ async def chat(request: Request):
         session_id = data.get("session_id", "default")
 
         if not user_input:
-            raise HTTPException(status_code=422, detail="Missing 'message' field.")
+            return JSONResponse(status_code=400, content={"error": "Missing 'message' in request body."})
 
-        # Save user input to memory
         memory.add_message(session_id, "user", user_input)
 
-        # Generate assistant reply
+        messages: list[ChatCompletionMessageParam] = memory.get_messages(session_id)
+
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(session_id),
+            messages=messages
         )
 
         assistant_reply = response.choices[0].message.content
@@ -32,7 +34,5 @@ async def chat(request: Request):
 
         return {"reply": assistant_reply}
 
-    except HTTPException as http_exc:
-        raise http_exc
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Error: {str(e)}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
