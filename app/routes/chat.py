@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request, HTTPException
 from openai import AsyncOpenAI
 from app.chat_memory import memory
-from app.config import OPENAI_API_KEY
+from app.config import OPENAI_API_KEY, MODEL_PROVIDER
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -16,29 +16,26 @@ async def chat(request: Request):
         session_id = data.get("session_id", "default")
 
         if not message:
-            raise HTTPException(status_code=400, detail="Missing 'message' in request body")
+            raise HTTPException(status_code=400, detail="Message is required.")
 
-        # 🧠 Save user input to memory
         memory.add_message(session_id, "user", message)
 
-        # 🧠 Get conversation history
-        history = memory.get_messages(session_id)
+        # Multi-model support (future-ready)
+        if MODEL_PROVIDER == "openai":
+            response = await client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=memory.get_messages(session_id)
+            )
+            reply = response.choices[0].message.content
+        elif MODEL_PROVIDER == "azure":
+            raise HTTPException(status_code=501, detail="Azure provider not implemented yet.")
+        elif MODEL_PROVIDER == "ollama":
+            raise HTTPException(status_code=501, detail="Ollama provider not implemented yet.")
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported MODEL_PROVIDER")
 
-        # 🧠 Send to OpenAI
-        response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=history
-        )
-
-        assistant_reply = response.choices[0].message.content
-
-        # 🧠 Save assistant reply to memory
-        memory.add_message(session_id, "assistant", assistant_reply)
-
-        return { "session_id": session_id, "reply": assistant_reply }
-
-    except HTTPException as http_err:
-        raise http_err
+        memory.add_message(session_id, "assistant", reply)
+        return {"reply": reply}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
