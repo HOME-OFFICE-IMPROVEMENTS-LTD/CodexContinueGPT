@@ -1,6 +1,6 @@
 # 🛠️ CodexContinue Developer Commands Cheatsheet
 
-This page contains all important backend, frontend, and devcontainer commands.
+This page contains all important backend, frontend, Open Interpreter, and devcontainer commands.
 
 ---
 
@@ -12,6 +12,21 @@ This page contains all important backend, frontend, and devcontainer commands.
 | `source .venv/bin/activate` | Activate Python virtual environment |
 | `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` | Start FastAPI server locally |
 | `pytest` | Run backend tests |
+
+---
+
+## 🧠 Open Interpreter IO
+
+| Command | Purpose |
+| :------ | :------ |
+| `app/io/agent_io.py` | Contains `CodexContinueIO` agent for OI interaction |
+| `IO.ask_backend(message)` | Send chat message to FastAPI backend |
+| `IO.remember(role, message)` | Add message to memory |
+| `IO.history()` | Retrieve conversation history |
+| `IO.clear()` | Clear session memory |
+| `IO.introspect()` | Show internal session state |
+
+> ✅ OI should call `IO.ask_backend(...)` directly to interact with the brain.
 
 ---
 
@@ -46,5 +61,5 @@ This page contains all important backend, frontend, and devcontainer commands.
 
 ---
 
-> 📚 Keep this cheatsheet handy when developing!
+> �� Keep this cheatsheet handy when developing!
 > 📜 Updated by Captain MO + CodexContinue Assistant
