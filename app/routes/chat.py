@@ -1,9 +1,10 @@
 # app/routes/chat.py
 
 from fastapi import APIRouter, Request, HTTPException
-from openai import AsyncOpenAI
 from app.chat_memory import memory
-from app.config import OPENAI_API_KEY, MODEL_PROVIDER
+from app.config import OPENAI_API_KEY
+from openai import AsyncOpenAI, OpenAIError
+import logging
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -12,30 +13,36 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 async def chat(request: Request):
     try:
         data = await request.json()
-        message = data.get("message")
+        user_input = data.get("message")
         session_id = data.get("session_id", "default")
 
-        if not message:
-            raise HTTPException(status_code=400, detail="Message is required.")
+        if not user_input:
+            raise HTTPException(status_code=422, detail="Message is required.")
 
-        memory.add_message(session_id, "user", message)
+        # 🧠 Save user message to memory
+        memory.add_message(session_id, "user", user_input)
 
-        # Multi-model support (future-ready)
-        if MODEL_PROVIDER == "openai":
-            response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=memory.get_messages(session_id)
-            )
-            reply = response.choices[0].message.content
-        elif MODEL_PROVIDER == "azure":
-            raise HTTPException(status_code=501, detail="Azure provider not implemented yet.")
-        elif MODEL_PROVIDER == "ollama":
-            raise HTTPException(status_code=501, detail="Ollama provider not implemented yet.")
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported MODEL_PROVIDER")
+        # 🔥 Send request to OpenAI
+        response = await client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=memory.get_messages(session_id),
+        )
 
-        memory.add_message(session_id, "assistant", reply)
-        return {"reply": reply}
+        assistant_reply = response.choices[0].message.content
+
+        # 💾 Save assistant reply
+        memory.add_message(session_id, "assistant", assistant_reply)
+
+        return {
+            "status": "success",
+            "session_id": session_id,
+            "reply": assistant_reply
+        }
+
+    except OpenAIError as e:
+        logging.error(f"[LLM-Error][{session_id}] {e}")
+        raise HTTPException(status_code=502, detail="LLM service unavailable.")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        logging.exception(f"[Server-Error][{session_id}] {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
