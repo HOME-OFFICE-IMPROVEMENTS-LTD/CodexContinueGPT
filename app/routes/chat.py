@@ -1,37 +1,34 @@
+# app/routes/chat.py
 
-from fastapi import APIRouter, Request, HTTPException
-from app.chat_memory import memory
-from app.config import OPENAI_API_KEY
+from fastapi import APIRouter, Request
 from openai import AsyncOpenAI
-from pydantic import BaseModel
-from typing import Optional
+from app.config import OPENAI_API_KEY
+from app.chat_memory import memory
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-
-class ChatRequest(BaseModel):
-    message: str
-    session_id: Optional[str] = "default"
 
 @router.post("/chat")
 async def chat(request: Request):
     try:
         data = await request.json()
-        chat_input = ChatRequest(**data)
+        user_input = data.get("message")
+        session_id = data.get("session_id", "default")
 
-        # Save user message
-        memory.add_message(chat_input.session_id, "user", chat_input.message)
+        if not user_input:
+            return {"error": "Message is required."}
 
-        # Query OpenAI
+        memory.add_message(session_id, "user", user_input)
+
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(chat_input.session_id)
+            messages=memory.get_messages(session_id)
         )
 
         assistant_reply = response.choices[0].message.content
-        memory.add_message(chat_input.session_id, "assistant", assistant_reply)
+        memory.add_message(session_id, "assistant", assistant_reply)
 
         return {"reply": assistant_reply}
-
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI Error: {str(e)}")
+        return {"error": str(e)}
