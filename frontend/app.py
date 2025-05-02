@@ -26,3 +26,17 @@ if st.button("Send") and user_input:
                 st.error(f"❌ {res.status_code}: {res.json().get('detail', 'Unknown error')}")
         except Exception as e:
             st.error(f"❌ Failed to connect: {str(e)}")
+
+
+# Insert API Key at the start
+action = 'start'
+
+# Request API key input
+if action == 'start':
+    st.sidebar.title('API Configuration')
+    openai_api_key = st.sidebar.text_input('Enter OpenAI API Key:', type='password')
+
+    # Store the API key in session state
+    if openai_api_key:
+        st.session_state.openai_api_key = openai_api_key
+    
