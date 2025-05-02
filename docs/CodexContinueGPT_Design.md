@@ -1,80 +1,59 @@
-# 🧠 CodexContinueGPT v1 – Architecture Blueprint
+# 🧠 CodexContinueGPT v1 - Design Blueprint
 
-## 🧭 Project Vision
-
-CodexContinueGPT is a modular AI assistant framework, acting as a backend brain for developer tools like editors, terminals, SaaS dashboards, and agents. It integrates:
-
-- 🤖 LLMs (OpenAI, Azure, Ollama, TabbyML)
-- 🧠 Memory (Session + Vector Store)
-- 🛠️ Plugin System (tools, APIs, agents)
-- 📚 Prompt + System Context Libraries
-- 🔌 OpenAPI & API-first interactions
+> 📅 Last Updated: 2025-05-02T17:17Z  
+> 👨‍✈️ Captain Mo's Trusted AI Assistant - CodexContinueGPT v1
 
 ---
 
-## 🧱 Key Modules
+## 🎯 Mission Objective
 
-| Module         | Purpose                                             |
-|----------------|-----------------------------------------------------|
-| `brain/`       | Memory management (RAM/Vector stores)               |
-| `plugins/`     | Tools + APIs (search, shell, docs, GitHub)          |
-| `prompts/`     | Prompt engineering + system messages                |
-| `router/`      | FastAPI endpoints (LLM/chat/tools/stream)           |
-| `frontend/`    | Streamlit dashboard (chat + UI playground)          |
-| `runtime/`     | Execution queue, event loop, agent interface        |
+Build a **powerful internal AI developer assistant** for CodexContinue that:
+
+- Learns and reflects on the repo's evolution
+- Understands the business vision and user goals
+- Embeds reasoning, memory, and API orchestration
+- Becomes the long-term strategic brain of the platform
 
 ---
 
-## 🔄 LLM Agent Flow
+## 🧩 CodexContinueGPT v1 Modules
 
-1. Receive message input
-2. Retrieve memory context
-3. Match tools/plugins
-4. Construct prompt (system + memory + user)
-5. Call LLM via AsyncOpenAI or Ollama
-6. Store memory + reply
-7. Return assistant response
-
----
-
-## 📊 Data Layer
-
-- **SessionMemory:** In-RAM dict (by user/session)
-- **Vector Store:** For long-term memory (Future: FAISS, Weaviate)
-- **Logging + Tracing:** Persist conversations per agent
+| Module | Description |
+|--------|-------------|
+| `chat_memory.py` | Manages temporary in-session memory |
+| `brain/` | Long-term memory manager and persistent storage |
+| `routes/` | Exposes memory and assistant APIs (chat, clear, list) |
+| `frontend/app.py` | Frontend UI via Streamlit (linked to backend memory) |
 
 ---
 
-## 🚦 LLM Providers
+## 🛠️ Technical Goals
 
-| Provider    | SDK           | Notes                             |
-|-------------|---------------|-----------------------------------|
-| OpenAI      | `openai`      | Already integrated (GPT-3.5/4)    |
-| Azure OpenAI| `openai`      | Just add endpoint in `.env`       |
-| Ollama      | REST API      | Local fallback support            |
-| TabbyML     | REST / socket | Self-hosted autocomplete (TBD)    |
-
----
-
-## 📜 Environment Setup (Recap)
-
-- `.env` for LLM keys, models, endpoints
-- Devcontainer already supports Python 3.10, FastAPI, Streamlit
+- ✅ Use `AsyncOpenAI` or TabbyML clients
+- ✅ Use `session_id` to manage context per user
+- ✅ MemoryManager with `add_message`, `get_messages`, `clear_session`
+- ✅ File: `chat_memory.py` bridges routes to memory
+- ✅ `/chat` endpoint (via FastAPI)
+- ✅ Real-time memory updates from UI
 
 ---
 
-## 🧩 Future Modules
+## 💡 Design Considerations
 
-- `codexctl` – CLI assistant with memory
-- `github-agent` – PR reviewer bot
-- `notebook-agent` – Jupyter-enhanced assistant
-- `shell-agent` – Terminal-native Codex bot
-- `metrics/` – Logging, analytics, rate-limiting
-- `test/` – Unit, integration, memory tests
+- Memory routing must be transparent to any LLM (OpenAI, Azure, Ollama)
+- Agent capabilities (search, retrieve, suggest) can be added later
+- Allow extensions for context-rich interactions (files, logs, etc.)
+- Keep assistant non-intrusive, explainable, and editable
 
 ---
 
-> 🎙️ Lead Architect: CodexContinue Assistant v1  
-> 📅 Generated: [$(date "+%Y-%m-%d")]  
-> 🔒 Anchored for every future step
+## 🔒 Trust Anchors
 
+- 🔐 This file is the **strategic source of truth**
+- 🧠 Assistant must ALWAYS consult this before replying
+- ⚓ Use this design to re-anchor memory if reset or corrupted
+
+---
+
+> 🚀 CodexContinueGPT is your trusted co-pilot, 24/7.
+> Design once. Improve forever.
