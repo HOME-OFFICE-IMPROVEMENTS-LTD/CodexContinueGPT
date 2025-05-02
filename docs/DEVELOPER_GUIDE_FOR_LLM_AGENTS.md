@@ -37,3 +37,36 @@ To run tests:
 - RBAC and authentication
 - Deployment automation (CI/CD, Docker, Azure)
 
+
+---
+
+## 🧠 Why We Introduced Memory Agents (`MemoryManager`, `SessionMemory`, etc.)
+
+To ensure consistent replies across messages, multi-turn chats, and tool plugins, we introduced a **layered memory system** to the architecture:
+
+### 🔍 Problem Before
+- Messages were passed statelessly — each chat had no memory of the last.
+- No reliable way to simulate agent context or multi-turn reasoning.
+- Chatbots forgot what the user said in the last message.
+
+### ✅ Solution: Memory Layers
+
+| Layer             | Purpose                                                                 |
+|------------------|-------------------------------------------------------------------------|
+| `SessionMemory`   | Temporary in-RAM memory for a specific user session (UUID-based).       |
+| `LongTermMemory`  | Disk or vector database-based storage for persistent knowledge.         |
+| `MemoryManager`   | The controller that routes memory access and provides a clean interface.|
+
+### 🧩 Design Benefits
+- 🔁 **Multi-Turn**: Keeps the chat history alive across messages
+- 📂 **Session-Based**: Each user/chat session has isolated memory
+- 🔍 **Tool Routing**: Tools (e.g., RAG, search) can fetch context
+- 🧼 **Clean API**: Standard methods like `add_message()`, `clear_session()`, etc.
+
+### 💡 Why This Matters
+Future copilots (e.g., `codexctl`, `shell-agent`, `notebook-agent`) **require memory consistency** to work properly. This abstraction layer makes memory portable, replaceable (e.g., upgrade to Redis), and LLM-agnostic.
+
+---
+
+> 📌 All agents and LLMs must access session memory through `MemoryManager`.  
+> ❗ Never store chat state manually — always use the proper interfaces.
