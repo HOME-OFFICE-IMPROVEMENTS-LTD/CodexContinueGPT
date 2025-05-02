@@ -1,9 +1,10 @@
 # app/routes/chat.py
 
 from fastapi import APIRouter, Request
-from openai import AsyncOpenAI
-from app.config import OPENAI_API_KEY
+from fastapi.responses import JSONResponse
 from app.chat_memory import memory
+from app.config import OPENAI_API_KEY
+from openai import AsyncOpenAI
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -12,23 +13,34 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 async def chat(request: Request):
     try:
         data = await request.json()
-        user_input = data.get("message")
         session_id = data.get("session_id", "default")
+        user_input = data.get("message", "").strip()
 
         if not user_input:
-            return {"error": "Message is required."}
+            return JSONResponse(
+                status_code=422,
+                content={"error": "Missing required 'message' in request body"}
+            )
 
+        # Save user input
         memory.add_message(session_id, "user", user_input)
 
+        # Query OpenAI
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=memory.get_messages(session_id)
         )
 
-        assistant_reply = response.choices[0].message.content
-        memory.add_message(session_id, "assistant", assistant_reply)
+        reply = response.choices[0].message.content.strip()
 
-        return {"reply": assistant_reply}
-    
+        # Save assistant reply
+        memory.add_message(session_id, "assistant", reply)
+
+        return {"reply": reply}
+
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[❌ Chat Route Error] {str(e)}")  # Future: use logging
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal Server Error", "details": str(e)}
+        )
