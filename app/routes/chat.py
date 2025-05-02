@@ -1,46 +1,38 @@
 # app/routes/chat.py
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from app.chat_memory import memory
 from app.config import OPENAI_API_KEY
 from openai import AsyncOpenAI
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = "default"
+
 @router.post("/chat")
-async def chat(request: Request):
+async def chat_endpoint(payload: ChatRequest):
     try:
-        data = await request.json()
-        session_id = data.get("session_id", "default")
-        user_input = data.get("message", "").strip()
+        # Save user message
+        memory.add_message(payload.session_id, "user", payload.message)
 
-        if not user_input:
-            return JSONResponse(
-                status_code=422,
-                content={"error": "Missing required 'message' in request body"}
-            )
-
-        # Save user input
-        memory.add_message(session_id, "user", user_input)
-
-        # Query OpenAI
+        # Call OpenAI with memory context
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(session_id)
+            messages=memory.get_messages(payload.session_id)
         )
 
         reply = response.choices[0].message.content.strip()
 
-        # Save assistant reply
-        memory.add_message(session_id, "assistant", reply)
+        # Save assistant message
+        memory.add_message(payload.session_id, "assistant", reply)
 
-        return {"reply": reply}
+        return {"reply": reply, "session_id": payload.session_id}
 
     except Exception as e:
-        print(f"[❌ Chat Route Error] {str(e)}")  # Future: use logging
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Internal Server Error", "details": str(e)}
-        )
+        raise HTTPException(status_code=500, detail=f"Assistant error: {str(e)}")
