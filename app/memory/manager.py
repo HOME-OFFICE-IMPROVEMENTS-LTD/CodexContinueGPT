@@ -51,3 +51,29 @@ class MemoryManager:
             await db.commit()
 
 
+"""
+🚀 Milestone Recorded — 2025-05-03
+- Branch `feature/add-memory` finalized as the new `main`.
+- Verified working environment locked via `requirements.txt`.
+- Redis and SQLite dual memory management fully integrated.
+- Old main removed, new main force-pushed to `origin/main`.
+- All Git hygiene and .gitignore rules respected.
+- Streamlit and Uvicorn endpoints tested OK.
+"""
+
+"""
+🚀 Milestone Recorded — 2025-05-03 (Evening)
+- Created branch `feature/plugin-engine` for upcoming plugin system work.
+- Main is now stable, clean, and verified as the production branch.
+- All environment files, dependencies, and memory architecture are finalized.
+- Development will now continue exclusively on `feature/plugin-engine`.
+"""
+
+"""
+📌 Dev Command Aliases (CodexContinueGPT Shell Setup)
+- `activate`      = source /workspaces/backend/.venv/bin/activate
+- `unicorn`       = uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+- `streamlit_ui`  = cd frontend && streamlit run app.py
+- `startbackend`  = ./start-backend.sh
+- `oi`            = interpreter -y (OpenInterpreter shell)
+"""
