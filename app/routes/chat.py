@@ -12,28 +12,25 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 async def chat(request: Request):
     try:
         data = await request.json()
-        message = data.get("message")
+        user_input = data.get("message")
         session_id = data.get("session_id", "default")
 
-        if not message:
-            raise HTTPException(status_code=400, detail="Message is required.")
+        if not user_input:
+            raise HTTPException(status_code=422, detail="Missing 'message' in request.")
 
-        # Save user message
-        memory.add_message(session_id, "user", message)
+        memory.add_message(session_id, "user", user_input)
 
-        # Get assistant reply from OpenAI
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(session_id),
+            messages=memory.get_messages(session_id)
         )
-        reply = response.choices[0].message.content
 
-        # Save assistant reply
-        memory.add_message(session_id, "assistant", reply)
+        assistant_reply = response.choices[0].message.content
+        memory.add_message(session_id, "assistant", assistant_reply)
 
-        return {"reply": reply}
+        return {"reply": assistant_reply}
 
     except OpenAIError as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"OpenAI Error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected Error: {str(e)}")
