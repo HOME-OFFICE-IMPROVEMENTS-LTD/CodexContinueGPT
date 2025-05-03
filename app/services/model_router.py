@@ -1,50 +1,38 @@
 # app/services/model_router.py
 
-import os
-import httpx
-import logging
-from openai import AsyncOpenAI
 from app.config import MODEL_PROVIDER, OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT
-
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-3.5-turbo")
+from openai import AsyncOpenAI
+import httpx
 
 class ModelRouter:
     def __init__(self):
         self.provider = MODEL_PROVIDER.lower()
-        self.client = self._get_client()
+        self.client = self._init_client()
 
-    def _get_client(self):
+    def _init_client(self):
         if self.provider == "openai":
             return AsyncOpenAI(api_key=OPENAI_API_KEY)
         elif self.provider == "azure":
             return AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=AZURE_OPENAI_ENDPOINT)
-        return None  # Ollama or unsupported
+        else:
+            return None  # Ollama & others handled manually
 
-    async def ask(self, messages: list, model: str = DEFAULT_MODEL) -> str:
+    async def ask(self, messages: list[dict], model="gpt-3.5-turbo") -> str:
         try:
             if self.provider in ["openai", "azure"]:
                 response = await self.client.chat.completions.create(
                     model=model,
-                    messages=messages,
+                    messages=messages
                 )
                 return response.choices[0].message.content
 
             elif self.provider == "ollama":
-                payload = {
-                    "model": model,
-                    "messages": messages,
-                    "stream": False
-                }
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post("http://localhost:11434/api/chat", json=payload)
-                    resp.raise_for_status()
-                    data = resp.json()
-                    return data.get("message", {}).get("content", "⚠️ No content returned.")
+                payload = { "model": model, "messages": messages }
+                async with httpx.AsyncClient() as client:
+                    res = await client.post("http://localhost:11434/api/chat", json=payload)
+                    res.raise_for_status()
+                    return res.json()["message"]["content"]
 
-            else:
-                logging.error(f"Unsupported model provider: {self.provider}")
-                return "❌ Unsupported MODEL_PROVIDER in .env"
-
+            return "❌ Unknown provider: MODEL_PROVIDER=" + self.provider
         except Exception as e:
-            logging.exception("🔥 ModelRouter failed")
-            return f"🔥 Model error: {str(e)}"
+            return f"🔥 LLM error: {str(e)}"
