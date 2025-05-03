@@ -1,36 +1,45 @@
 # app/routes/chat.py
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Request, status
 from app.chat_memory import memory
 from app.config import OPENAI_API_KEY
 from openai import AsyncOpenAI, OpenAIError
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
+class ChatRequest(BaseModel):
+    session_id: Optional[str] = "default"
+    message: str
+
 @router.post("/chat")
 async def chat(request: Request):
     try:
-        data = await request.json()
-        user_input = data.get("message")
-        session_id = data.get("session_id", "default")
+        body = await request.json()
+        data = ChatRequest(**body)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid input: {str(e)}")
 
-        if not user_input:
-            raise HTTPException(status_code=422, detail="Missing 'message' in request.")
+    try:
+        # 🧠 Store user message
+        memory.add_message(data.session_id, "user", data.message)
 
-        memory.add_message(session_id, "user", user_input)
-
+        # 🤖 Get assistant reply from OpenAI
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=memory.get_messages(session_id)
+            messages=memory.get_messages(data.session_id)
         )
+        reply = response.choices[0].message.content
 
-        assistant_reply = response.choices[0].message.content
-        memory.add_message(session_id, "assistant", assistant_reply)
+        # 🧠 Store assistant reply
+        memory.add_message(data.session_id, "assistant", reply)
 
-        return {"reply": assistant_reply}
+        return {"reply": reply}
 
     except OpenAIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI Error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"LLM Error: {str(e)}")
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected Error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error: {str(e)}")
