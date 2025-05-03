@@ -1,44 +1,39 @@
 # app/routes/chat.py
 
-from fastapi import APIRouter, Request, HTTPException
-from app.chat_memory import memory
-from app.config import OPENAI_API_KEY
-from openai import AsyncOpenAI, OpenAIError
-from app.codex_prompt_engine.engine import CodexPromptEngine
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
+from app.chat_memory import add_message, get_short_memory
+from app.brain.planner import Planner
+from app.services.model_loader import ModelLoader
+from openai import OpenAIError
+
 router = APIRouter()
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-prompt_engine = CodexPromptEngine()
+loader = ModelLoader()
 
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = "default"
 
 @router.post("/chat")
-async def chat_endpoint(request: Request):
+async def chat_endpoint(payload: ChatRequest):
     try:
-        body = await request.json()
-        data = ChatRequest(**body)
-        session_id = data.session_id
-        user_input = data.message
+        # Add user message to memory
+        await add_message(payload.session_id, "user", payload.message)
 
-        memory.add_message(session_id, "user", user_input)
-        history = memory.get_messages(session_id)
-        prompt = prompt_engine.build_prompt(history[:-1], user_input)
+        # Get short memory
+        memory = await get_short_memory(payload.session_id)
 
-        response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=prompt,
-        )
+        # Call model
+        reply = await loader.chat(messages=memory)
 
-        assistant_reply = response.choices[0].message.content
-        memory.add_message(session_id, "assistant", assistant_reply)
+        # Add assistant reply to memory
+        await add_message(payload.session_id, "assistant", reply)
 
-        return { "reply": assistant_reply }
+        return {"reply": reply}
 
     except OpenAIError as e:
-        raise HTTPException(status_code=502, detail=f"OpenAI error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")

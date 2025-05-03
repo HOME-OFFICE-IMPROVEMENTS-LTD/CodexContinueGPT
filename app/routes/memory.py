@@ -1,35 +1,25 @@
 # app/routes/memory.py
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from app.chat_memory import memory
+from typing import Optional
+from app.memory.manager import MemoryManager
 
-router = APIRouter(
-    prefix="/memory",
-    tags=["Memory"]
-)
+router = APIRouter()
 
-class SessionListResponse(BaseModel):
-    sessions: list[str]
+@router.get("/memory")
+async def fetch_memory(session_id: Optional[str] = "default", mode: Optional[str] = "short"):
+    try:
+        memory = MemoryManager(session_id)
+        messages = await memory.get_messages(mode=mode)
+        return {"session_id": session_id, "messages": messages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch memory: {str(e)}")
 
-class ClearSessionResponse(BaseModel):
-    message: str
-
-@router.get("/sessions", response_model=SessionListResponse)
-async def list_sessions():
-    """
-    List all active session IDs.
-    """
-    sessions = memory.list_sessions()
-    return {"sessions": sessions}
-
-@router.post("/clear/{session_id}", response_model=ClearSessionResponse)
-async def clear_session_memory(session_id: str):
-    """
-    Clear all memory for a given session ID.
-    """
-    if session_id not in memory.list_sessions():
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found.")
-
-    memory.clear_session(session_id)
-    return {"message": f"Memory cleared for session: {session_id}"}
+@router.delete("/memory")
+async def reset_memory(session_id: Optional[str] = "default"):
+    try:
+        memory = MemoryManager(session_id)
+        await memory.reset()
+        return {"message": f"Memory for session '{session_id}' has been reset."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset memory: {str(e)}")

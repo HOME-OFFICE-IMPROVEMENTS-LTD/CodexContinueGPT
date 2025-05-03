@@ -1,5 +1,8 @@
 # app/main.py
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.chat import router as chat_router
@@ -27,7 +30,7 @@ app.include_router(memory_router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to CodexContinue API ��"}
+    return {"message": "Welcome to CodexContinue API 👋"}
 
 @app.get("/health")
 def health_check():
