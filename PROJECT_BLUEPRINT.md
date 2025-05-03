@@ -68,6 +68,8 @@ CodexContinue/
 
 ## 🔥 Status Tracker
 
+- Milestone achieved: Conversational shell agents supported as of 2025-05-03.
+
 - [x] Devcontainer Setup
 - [x] Backend running with FastAPI
 - [ ] Frontend UI starter (TBD)

@@ -63,3 +63,12 @@ This page contains all important backend, frontend, Open Interpreter, and devcon
 
 > �� Keep this cheatsheet handy when developing!
 > 📜 Updated by Captain MO + CodexContinue Assistant
+
+
+# 🧠 Milestone Recorded — 2025-05-03 (Night)
+
+- Installed and verified `openinterpreter`.
+- Added alias `oi='interpreter -y'` to ~/.bash_aliases.
+- Confirmed it launches correctly in CodexContinueGPT shell.
+- Pinned `openinterpreter` to requirements.txt via pip freeze.
+- Project now supports conversational shell agents natively.
