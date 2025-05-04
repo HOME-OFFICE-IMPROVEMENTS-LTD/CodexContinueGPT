@@ -10,6 +10,7 @@ from datetime import datetime
 from app.routes.chat import router as chat_router
 from app.routes.memory import router as memory_router
 from app.routes.plugin_routes import router as plugin_router
+from app.routes.tools import router as tools_router
 from app.routes.memory_audit import router as memory_audit_router
 from app.routes.tools import router as tools_router
 
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(memory_router)
 app.include_router(plugin_router)
+app.include_router(tools_router)
 app.include_router(memory_audit_router)
 app.include_router(tools_router)
 

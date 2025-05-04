@@ -8,12 +8,10 @@ registry = register_all_plugins()
 
 @router.get("/tools")
 def list_tools():
+    tools = registry.all()
     return {
         "tools": [
-            {
-                "name": tool.name,
-                "description": tool.description
-            }
-            for tool in registry.all().values()
+            {"name": name, "description": tool.description}
+            for name, tool in tools.items()
         ]
     }
