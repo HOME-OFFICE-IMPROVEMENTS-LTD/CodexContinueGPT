@@ -79,3 +79,38 @@ Plugins are auto-loaded via PluginManager and are executable by name.
 - PluginRegistry tested and functional.
 - Documentation updated in Plugin_API_Integration_Guide.md
 """
+### 🧠 Milestone Recorded — 2025-05-04
+
+- Plugin Runner system (`scripts/run_plugin.py`) is complete and verified.
+- Shell, Memory, and Agent plugins are now fully compatible with CodexTool.
+- Full plugin registry (`register_all_plugins`) allows modular plugin control.
+- All CLI runners and test cases pass, with memory and command execution plugins responding.
+- Plugin API documentation and developer guides are updated accordingly.
+- Project now supports `/run <plugin> <input>` style shell interfacing.
+
+Next:
+- Refactor `/chat` endpoint to support tool-based dispatch.
+- Introduce Plugin Agent as a conversational middleware layer.
+###
+
+## 🔌 Plugin Agent Dispatch
+
+CodexContinueGPT supports direct plugin invocation inside chat sessions.
+
+### Usage
+
+Send messages in the format: 
+/run <plugin_name> <input_data>
+
+### Example/run shell echo hello
+/run shell echo hello
+
+This bypasses LLM and invokes the registered plugin. The PluginAgent is used to intercept such commands.
+
+
+### 🧠 Milestone Recorded — 2025-05-04 (Afternoon)
+
+- Memory audit API `/memory/audit/{session_id}` introduced for developers.
+- Supports frontend visualization or debugging of memory timeline.
+- Example added: `curl http://localhost:8000/memory/audit/default`
+- Route automatically registered in `main.py`.
