@@ -1,18 +1,29 @@
 # app/plugins/agent_plugin.py
 
-from interface import PluginInterface
+from app.plugins.register_all import register_all_plugins
 
-class AgentPlugin(PluginInterface):
-    """
-    🧠 NOTE: This is a temporary solution until we have a full-fledged Codex Agent System.
-    """
+class AgentPlugin:
+    def __init__(self):
+        self.registry = register_all_plugins()
 
-    def initialize(self):
-        print("Codex Agent plugin initialized.")
+    def handle(self, message: str, session_id: str = "default") -> str:
+        if message.startswith("/run "):
+            parts = message.split(" ", 2)
+            if len(parts) < 3:
+                return "⚠️ Invalid /run format. Use: /run <plugin> <input>"
 
-    def execute(self, data):
-        # Simple simulated response for now
-        return {"agent_response": f"🧠 (Codex Agent simulated): Received -> {data}"}
+            _, plugin_name, input_data = parts
+            plugin = self.registry.get(plugin_name)
 
-    def shutdown(self):
-        print("Codex Agent plugin shutdown.")
+            if not plugin:
+                return f"❌ Plugin '{plugin_name}' not found"
+
+            try:
+                plugin.initialize()
+                result = plugin.run(input_data)
+                plugin.shutdown()
+                return str(result)
+            except Exception as e:
+                return f"🔥 Error running plugin '{plugin_name}': {str(e)}"
+        
+        return None  # Not a plugin message — fallback to model
