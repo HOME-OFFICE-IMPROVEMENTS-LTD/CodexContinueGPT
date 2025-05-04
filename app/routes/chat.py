@@ -8,11 +8,11 @@ from app.brain.planner import Planner
 from app.services.model_loader import ModelLoader
 from openai import OpenAIError
 
-from app.plugins.register_all import register_all_plugins
+from app.plugins.agent_plugin import AgentPlugin
 
 router = APIRouter()
 loader = ModelLoader()
-registry = register_all_plugins()
+agent = AgentPlugin()
 
 class ChatRequest(BaseModel):
     message: str
@@ -21,37 +21,23 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 async def chat_endpoint(payload: ChatRequest):
     try:
-        message = payload.message.strip()
-        session_id = payload.session_id
-
         # Add user message to memory
-        await add_message(session_id, "user", message)
+        await add_message(payload.session_id, "user", payload.message)
 
-        # Check if message is a plugin invocation
-        if message.startswith("/run "):
-            parts = message.split(" ", 2)
-            if len(parts) < 3:
-                raise HTTPException(status_code=400, detail="Invalid /run command format. Use /run <plugin> <input>")
+        # Check if message should be handled by a plugin
+        tool_reply = agent.handle(payload.message, payload.session_id)
+        if tool_reply:
+            await add_message(payload.session_id, "assistant", tool_reply)
+            return {"reply": tool_reply}
 
-            plugin_name = parts[1]
-            plugin_input = parts[2]
+        # Get memory context
+        memory = await get_short_memory(payload.session_id)
 
-            plugin = registry.get(plugin_name)
-            if not plugin:
-                raise HTTPException(status_code=404, detail=f"Plugin '{plugin_name}' not found")
-
-            plugin.initialize()
-            result = plugin.run(plugin_input)
-            plugin.shutdown()
-
-            # Add assistant reply
-            await add_message(session_id, "assistant", str(result))
-            return {"reply": str(result)}
-
-        # Standard LLM Chat
-        memory = await get_short_memory(session_id)
+        # Generate model reply
         reply = await loader.chat(messages=memory)
-        await add_message(session_id, "assistant", reply)
+
+        # Add model reply to memory
+        await add_message(payload.session_id, "assistant", reply)
 
         return {"reply": reply}
 
