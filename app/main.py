@@ -5,9 +5,11 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+
 from app.routes.chat import router as chat_router
 from app.routes.memory import router as memory_router
-from datetime import datetime
+from app.routes.plugin_routes import router as plugin_router
 
 app = FastAPI(
     title="CodexContinue API",
@@ -18,16 +20,18 @@ app = FastAPI(
 # ✅ Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can restrict this to your frontend domain later
+    allow_origins=["*"],  # Replace with frontend domain if needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Include routers properly
+# ✅ Register all API routes
 app.include_router(chat_router)
 app.include_router(memory_router)
+app.include_router(plugin_router)
 
+# ✅ Base endpoints
 @app.get("/")
 def read_root():
     return {"message": "Welcome to CodexContinue API 👋"}
