@@ -4,6 +4,7 @@ from typing import List, Dict
 from app.db.sqlite_conn import get_db
 from app.db.models import Message
 from redis import asyncio as aioredis
+from sqlalchemy import text
 from datetime import datetime
 import json
 import os
@@ -19,24 +20,25 @@ class MemoryManager:
     async def save_message(self, role: str, content: str):
         message = {"role": role, "content": content, "timestamp": datetime.utcnow().isoformat()}
         await self.redis.rpush(self.session_id, json.dumps(message))
+
         async with get_db() as db:
             db.add(Message(session_id=self.session_id, role=role, content=content))
             await db.commit()
 
     async def get_messages(self, mode: str = "short", limit: int = 5) -> List[Dict]:
         try:
-            redis_range = (-limit if mode == "short" else 0, -1)
-            messages = await self.redis.lrange(self.session_id, *redis_range)
+            messages = await self.redis.lrange(self.session_id, -limit if mode == "short" else 0, -1)
             return [json.loads(m) for m in messages]
         except Exception:
             async with get_db() as db:
-                query = await db.execute(
-                    f"""
+                stmt = text("""
                     SELECT role, content FROM messages
                     WHERE session_id = :session_id
                     ORDER BY timestamp DESC
                     LIMIT :limit
-                    """,
+                """)
+                query = await db.execute(
+                    stmt,
                     {"session_id": self.session_id, "limit": limit if mode == "short" else 1000}
                 )
                 rows = query.fetchall()
@@ -46,26 +48,7 @@ class MemoryManager:
         await self.redis.delete(self.session_id)
         async with get_db() as db:
             await db.execute(
-                "DELETE FROM messages WHERE session_id = :session_id",
+                text("DELETE FROM messages WHERE session_id = :session_id"),
                 {"session_id": self.session_id}
             )
             await db.commit()
-
-    async def audit_summary(self) -> Dict:
-        try:
-            redis_count = await self.redis.llen(self.session_id)
-        except:
-            redis_count = -1
-
-        async with get_db() as db:
-            result = await db.execute(
-                "SELECT COUNT(*) FROM messages WHERE session_id = :sid",
-                {"sid": self.session_id}
-            )
-            sqlite_count = result.scalar()
-
-        return {
-            "session": self.session_id,
-            "redis_count": redis_count,
-            "sqlite_count": sqlite_count,
-        }
