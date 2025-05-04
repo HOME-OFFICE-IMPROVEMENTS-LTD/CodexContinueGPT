@@ -1,15 +1,29 @@
 # app/plugins/tools/memory.py
 
-from app.plugins.base import Tool
-from app.chat_memory import memory
+from app.plugins.base import CodexTool
+from app.chat_memory import get_short_memory
 
-class MemoryTool(Tool):
+class MemoryPlugin(CodexTool):
     name = "memory"
-    description = "List sessions and messages from memory"
+    description = "List short memory messages for a session"
 
-    async def run(self, input_text: str) -> str:
+    def initialize(self):
+        print("Memory plugin initialized")
+
+    def execute(self, input_text: str) -> dict:
+        import asyncio
         session_id = input_text.strip() or "default"
-        messages = memory.get_messages(session_id)
-        return f"Session: {session_id}\n" + "\n".join([f"{m['role']}: {m['content']}" for m in messages])
+        messages = asyncio.run(get_short_memory(session_id))
+        return {
+            "session": session_id,
+            "messages": messages
+        }
 
-tool = MemoryTool()
+    def run(self, input_text: str) -> dict:
+        return self.execute(input_text)
+
+    def shutdown(self):
+        print("Memory plugin shutdown")
+
+tool = MemoryPlugin()
+

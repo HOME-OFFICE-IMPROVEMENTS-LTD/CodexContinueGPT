@@ -1,17 +1,27 @@
 # app/plugins/tools/shell.py
 
 import subprocess
-from app.plugins.base import Tool
+from app.brain.core.base import CodexTool  # Corrected import
 
-class ShellTool(Tool):
+class ShellPlugin(CodexTool):
     name = "shell"
     description = "Run a shell command"
 
-    async def run(self, input_text: str) -> str:
+    def initialize(self):
+        print("Shell plugin initialized")
+
+    def execute(self, input_text: str) -> dict:
         try:
             result = subprocess.run(input_text, shell=True, capture_output=True, text=True)
-            return result.stdout.strip() or result.stderr.strip()
+            return {"output": result.stdout.strip() or result.stderr.strip()}
         except Exception as e:
-            return str(e)
+            return {"error": str(e)}
 
-tool = ShellTool()
+    def run(self, input_text: str) -> dict:
+        # Required to satisfy abstract base class
+        return self.execute(input_text)
+
+    def shutdown(self):
+        print("Shell plugin shutdown")
+
+tool = ShellPlugin()

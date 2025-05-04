@@ -36,3 +36,46 @@ This guide outlines how to integrate plugins into the CodexContinue backend arch
 
 ---
 
+### Plugin Naming Convention
+
+- File must be named like: `example_plugin.py`
+- Class inside must be named: `ExamplePlugin` (PascalCase of file)
+- Must implement `PluginInterface`
+
+Example:
+
+```python
+class MyPlugin(PluginInterface):
+    ...
+
+## 🧩 Plugin System (Updated 2025-05-03)
+
+CodexContinueGPT supports dynamic plugin loading. Plugins must follow the `PluginInterface` located at `app/plugins/interface.py`.
+
+### Plugin Requirements
+- Must end in `_plugin.py`
+- Must implement:
+  - `initialize()`
+  - `execute(data)`
+  - `shutdown()`
+
+### Example
+
+```python
+from app.plugins.interface import PluginInterface
+
+class MyPlugin(PluginInterface):
+    def initialize(self): ...
+    def execute(self, data): ...
+    def shutdown(self): ...
+
+Plugins are auto-loaded via PluginManager and are executable by name.    
+
+"""
+🚀 Milestone Recorded — 2025-05-03
+- PluginManager verified with dynamic plugin discovery.
+- `huggingface_plugin` and `calculator_plugin` conform to interface.
+- OpenInterpreter alias + testing alias added.
+- PluginRegistry tested and functional.
+- Documentation updated in Plugin_API_Integration_Guide.md
+"""

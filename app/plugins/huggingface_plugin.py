@@ -2,22 +2,22 @@
 # app/plugins/huggingface_plugin.py
 
 from transformers import pipeline
-from interface import PluginInterface
+from app.plugins.interface import PluginInterface
 
-class HuggingFacePlugin(PluginInterface):
+class HuggingfacePlugin(PluginInterface):
     def __init__(self):
         self.model = None
 
     def initialize(self):
-        # Load a sentiment-analysis model
         self.model = pipeline('sentiment-analysis')
-        print("Hugging Face model loaded.")
+        print("[HuggingfacePlugin] Model loaded")
 
     def execute(self, data):
-        # Perform sentiment analysis
+        if not self.model:
+            raise RuntimeError("Model not initialized.")
+        # Expecting data to be a string or list of strings
         return self.model(data)
 
     def shutdown(self):
-        # Clean up resources
         self.model = None
-        print("Hugging Face plugin resources cleaned up.")
+        print("[HuggingfacePlugin] Resources cleaned up")

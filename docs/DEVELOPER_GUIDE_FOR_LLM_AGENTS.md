@@ -70,3 +70,11 @@ Future copilots (e.g., `codexctl`, `shell-agent`, `notebook-agent`) **require me
 
 > 📌 All agents and LLMs must access session memory through `MemoryManager`.  
 > ❗ Never store chat state manually — always use the proper interfaces.
+
+
+## 🧠 OpenInterpreter Integration (2025-05-03)
+
+- `oi` → Runs OpenInterpreter shell (`interpreter -y`)
+- Purpose: Fast dev assistant for shell commands, Python, and planning logic
+- Installed version: `open-interpreter==0.4.3`
+- **Note**: This is a temporary solution until we have a full-fledged agent
