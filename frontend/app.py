@@ -1,89 +1,193 @@
 # frontend/app.py
-
 import streamlit as st
 import requests
 import uuid
+from datetime import datetime
+import json
 
-BACKEND_CHAT_URL = "http://localhost:8000/chat"
-BACKEND_PLUGIN_LIST_URL = "http://localhost:8000/plugins"
-BACKEND_PLUGIN_EXEC_URL = "http://localhost:8000/plugins/execute"
-BACKEND_SESSIONS_URL = "http://localhost:8000/sessions"
-BACKEND_MEMORY_AUDIT_URL = "http://localhost:8000/memory/audit"
+# Configuration
+BACKEND_BASE_URL = "http://localhost:8000"  # Move to config file/environment variables
+ENDPOINTS = {
+    "chat": f"{BACKEND_BASE_URL}/chat",
+    "plugins": f"{BACKEND_BASE_URL}/plugins",
+    "plugin_exec": f"{BACKEND_BASE_URL}/plugins/execute",
+    "sessions": f"{BACKEND_BASE_URL}/sessions",
+    "memory_audit": f"{BACKEND_BASE_URL}/memory/audit"
+}
 
-# Session ID state
-if "session_id" not in st.session_state:
-    st.session_state.session_id = "default"
+# Session Management
+def init_session():
+    if "session_id" not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
+        st.session_state.session_start = datetime.now().isoformat()
+        st.session_state.chat_history = []
 
-# Get available sessions
-def fetch_sessions():
+# UI Configuration
+def configure_ui():
+    st.set_page_config(
+        page_title="CodexContinueGPT Pro",
+        page_icon="🧠",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    st.title("🧠 CodexContinueGPT Pro Assistant")
+    st.markdown("""
+        <style>
+            .stTextArea [data-baseweb=textarea] { background-color: #f8f9fa; }
+            .stButton>button { width: 100%; }
+            .stMarkdown { padding: 0.5rem; }
+        </style>
+    """, unsafe_allow_html=True)
+
+# API Helpers
+def safe_api_call(url, method="GET", payload=None):
     try:
-        res = requests.get(BACKEND_SESSIONS_URL)
-        if res.status_code == 200:
-            return res.json().get("sessions", [])
-    except:
-        return []
-    return []
+        if method == "GET":
+            response = requests.get(url, timeout=10)
+        else:
+            response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"API Error: {str(e)}")
+        return None
 
-# Title
-st.title("🧠 CodexContinue Assistant")
+# Sidebar Components
+def render_sidebar():
+    with st.sidebar:
+        st.title("🔐 Session & Configuration")
+        
+        # API Key Management
+        api_key = st.text_input("OpenAI API Key", type="password", 
+                              help="Your OpenAI API key is never stored on our servers")
+        
+        # Session Management
+        sessions = safe_api_call(ENDPOINTS["sessions"]) or {"sessions": []}
+        selected = st.selectbox(
+            "🗂️ Active Session",
+            options=sessions["sessions"] + [st.session_state.session_id],
+            index=0
+        )
+        st.session_state.session_id = selected
+        
+        # System Status
+        st.markdown("---")
+        st.markdown("**System Status**")
+        col1, col2 = st.columns(2)
+        col1.metric("Session ID", st.session_state.session_id[:8])
+        col2.metric("Started", st.session_state.session_start.split("T")[0])
+        
+        # Debug Info (hidden by default)
+        if st.checkbox("Show debug info"):
+            st.json({
+                "session": st.session_state.session_id,
+                "backend": BACKEND_BASE_URL,
+                "last_updated": datetime.now().isoformat()
+            })
 
-# Sidebar
-st.sidebar.title("Session Control")
-available_sessions = fetch_sessions()
-selected = st.sidebar.selectbox("Select a session", options=available_sessions or ["default"])
-st.session_state.session_id = selected
+# Main Chat Interface
+def render_chat_interface():
+    st.markdown("---")
+    mode = st.radio(
+        "Interaction Mode:",
+        ["🤖 Chat", "🧩 Plugin", "🧠 Audit Timeline"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    user_input = st.text_area(
+        "Your message or input", 
+        height=100,
+        placeholder="Type your message or query here...",
+        key="user_input"
+    )
+    
+    if mode == "🤖 Chat":
+        if st.button("💬 Send Message", use_container_width=True):
+            handle_chat_submission(user_input)
+    
+    elif mode == "🧩 Plugin":
+        render_plugin_interface(user_input)
+    
+    elif mode == "🧠 Audit Timeline":
+        if st.button("📜 Load Memory Timeline", use_container_width=True):
+            render_memory_timeline()
 
-# Sidebar: API Key input
-openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-if openai_api_key:
-    st.session_state.openai_api_key = openai_api_key
+# Chat Mode Handler
+def handle_chat_submission(user_input):
+    with st.spinner("Generating response..."):
+        payload = {
+            "session_id": st.session_state.session_id,
+            "message": user_input,
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "source": "web_ui"
+            }
+        }
+        
+        response = safe_api_call(ENDPOINTS["chat"], "POST", payload)
+        if response:
+            st.session_state.chat_history.append({
+                "user": user_input,
+                "assistant": response.get("reply"),
+                "timestamp": datetime.now().isoformat()
+            })
+            display_chat_history()
 
-# Main interface
-mode = st.radio("Choose interaction mode:", ["🤖 Chat", "🧩 Run Plugin"])
+# Plugin Mode Handler
+def render_plugin_interface(user_input):
+    plugins = safe_api_call(ENDPOINTS["plugins"]) or {"plugins": []}
+    plugin = st.selectbox(
+        "Select Plugin",
+        options=plugins.get("plugins", []),
+        help="Choose a plugin to execute"
+    )
+    
+    if st.button("🔌 Execute Plugin", use_container_width=True):
+        with st.spinner(f"Executing {plugin}..."):
+            response = safe_api_call(
+                ENDPOINTS["plugin_exec"],
+                "POST",
+                {"plugin": plugin, "data": user_input}
+            )
+            if response:
+                st.json(response)
 
-if mode == "🤖 Chat":
-    user_input = st.text_input("Your message:")
-    if st.button("Send") and user_input:
-        with st.spinner("Thinking..."):
-            try:
-                res = requests.post(BACKEND_CHAT_URL, json={
-                    "session_id": st.session_state.session_id,
-                    "message": user_input
-                })
-                if res.status_code == 200:
-                    st.success(res.json()["reply"])
-                else:
-                    st.error(f"❌ {res.status_code}: {res.json().get('detail')}")
-            except Exception as e:
-                st.error(f"Connection error: {str(e)}")
+# Memory Timeline Handler
+def render_memory_timeline():
+    with st.spinner("Auditing memory..."):
+        response = safe_api_call(
+            f"{ENDPOINTS['memory_audit']}/{st.session_state.session_id}"
+        )
+        if response:
+            render_memory_visualization(response)
 
-elif mode == "🧩 Run Plugin":
-    try:
-        plugins_res = requests.get(BACKEND_PLUGIN_LIST_URL)
-        plugins = plugins_res.json().get("plugins", [])
-        selected_plugin = st.selectbox("Select a plugin", options=plugins)
-        plugin_input = st.text_input("Your message or input:")
-        if st.button("Run Plugin") and selected_plugin:
-            with st.spinner("Running..."):
-                res = requests.post(BACKEND_PLUGIN_EXEC_URL, json={
-                    "plugin": selected_plugin,
-                    "data": plugin_input
-                })
-                if res.status_code == 200:
-                    st.json(res.json())
-                else:
-                    st.error("Plugin execution failed.")
-    except:
-        st.error("Failed to load plugins.")
+def display_chat_history():
+    for msg in st.session_state.chat_history[-5:]:  # Show last 5 messages
+        with st.chat_message("user"):
+            st.markdown(msg["user"])
+        with st.chat_message("assistant"):
+            st.markdown(msg["assistant"])
 
-# Audit Panel
-st.subheader("📜 Memory Timeline")
-try:
-    audit_url = f"{BACKEND_MEMORY_AUDIT_URL}/{st.session_state.session_id}"
-    audit_res = requests.get(audit_url)
-    if audit_res.status_code == 200:
-        data = audit_res.json()
-        for msg in data.get("full", []):
-            st.markdown(f"**{msg['role'].capitalize()}**: {msg['content']}")
-except:
-    st.warning("Unable to load memory audit.")
+def render_memory_visualization(data):
+    tab1, tab2 = st.tabs(["🗂️ Short-Term Memory", "📚 Long-Term Memory"])
+    
+    with tab1:
+        for m in data.get("short", []):
+            with st.expander(f"{m['role'].capitalize()} - {m.get('timestamp', '')}"):
+                st.markdown(m["content"])
+    
+    with tab2:
+        for m in data.get("full", []):
+            with st.expander(f"{m['role'].capitalize()} - {m.get('timestamp', '')}"):
+                st.markdown(m["content"])
+
+# Main App Flow
+def main():
+    init_session()
+    configure_ui()
+    render_sidebar()
+    render_chat_interface()
+
+if __name__ == "__main__":
+    main()
