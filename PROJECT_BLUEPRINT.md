@@ -101,3 +101,8 @@ CodexContinue/
 ---
 
 > 🛡️ Saved by Captain Mo + Copilot. Updated: 2025
+
+🧠 Milestone — 2025-05-04
+- Real-time `/chat` plugin dispatch enabled via PluginAgent.
+- Chat endpoint parses `/run <plugin> <input>` before calling LLM.
+- Memory logging and plugin middleware are now unified.
