@@ -1,46 +1,18 @@
-import sqlite3
+import asyncio
 import os
 
+from sqlalchemy.ext.asyncio import create_async_engine
+from app.db.models import Base
+
 db_path = os.getenv("SQLITE_DB_PATH", "app/db/memory.db")
-os.makedirs(os.path.dirname(db_path), exist_ok=True)
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
+DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
 
-# Plugin logs table
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS plugin_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
-    session_id TEXT NOT NULL,
-    plugin TEXT NOT NULL,
-    input TEXT,
-    output TEXT,
-    log_message TEXT
-)
-''')
+engine = create_async_engine(DATABASE_URL, echo=False)
 
-# Memory tables (optional)
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS short_term_memory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-)
-''')
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print(f"✅ SQLite database initialized at {db_path}")
 
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS long_term_memory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-)
-''')
-
-conn.commit()
-conn.close()
-
-print(f"✅ SQLite database initialized at {db_path}")
+if __name__ == "__main__":
+    asyncio.run(init_db())
