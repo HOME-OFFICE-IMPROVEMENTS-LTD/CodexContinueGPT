@@ -1,30 +1,38 @@
 # app/plugins/tools/memory_plugin.py
 
 from app.brain.core.base import CodexTool
-from app.chat_memory import get_short_memory
+from app.memory.manager import MemoryManager
+from datetime import datetime
+import asyncio
 
 class MemoryPlugin(CodexTool):
     name = "memory"
     description = "List short memory for a given session"
+    author = "CodexContinueGPT"
+    version = "1.0"
+    updated_at = datetime.utcnow().isoformat()
+    category = "Utility"
+    requirements = []
+    parameters = {}
+    example = "run memory <session_id>"
 
     def initialize(self):
-        print("Memory plugin initialized")
+        print("MemoryPlugin initialized")
+
+    def run(self, input: str) -> dict:
+        return self.execute(input)
 
     def execute(self, session_id: str) -> dict:
-        import asyncio
         try:
-            messages = asyncio.run(get_short_memory(session_id.strip()))
+            memory = MemoryManager(session_id.strip())
+            loop = asyncio.get_event_loop()
+            messages = loop.run_until_complete(memory.get_messages("short"))
             return {
                 "session": session_id,
-                "messages": messages
+                "messages": messages,
+                "count": len(messages)
             }
         except Exception as e:
             return {"error": str(e)}
-
-    def run(self, input_text: str):
-        return self.execute(input_text)
-
-    def shutdown(self):
-        print("Memory plugin shutdown")
 
 plugin = MemoryPlugin()

@@ -14,7 +14,7 @@ from app.routes.sessions import router as sessions_router
 from app.routes.tools import router as tools_router
 from app.routes.memory_audit import router as memory_audit_router
 from app.routes.tools import router as tools_router
-
+from app.routes import plugin_logs
 
 app = FastAPI(
     title="CodexContinue API",
@@ -39,6 +39,7 @@ app.include_router(sessions_router)
 app.include_router(tools_router)
 app.include_router(memory_audit_router)
 app.include_router(tools_router)
+app.include_router(plugin_logs.router)
 
 # ✅ Register all plugins
 

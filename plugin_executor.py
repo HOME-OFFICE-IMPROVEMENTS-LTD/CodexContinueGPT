@@ -1,5 +1,3 @@
-# app/plugins/manager.py
-
 from app.plugins.register_all import register_all_plugins
 from app.memory.sqlite import get_sqlite_connection
 from datetime import datetime
@@ -23,7 +21,6 @@ class PluginExecutor:
         except Exception as e:
             result = {"error": str(e)}
 
-        # Log the plugin execution
         try:
             conn = get_sqlite_connection()
             cursor = conn.cursor()
