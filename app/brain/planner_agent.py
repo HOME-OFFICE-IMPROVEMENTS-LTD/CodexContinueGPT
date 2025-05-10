@@ -1,28 +1,19 @@
-# app/brain/planner_agent.py
-
+from app.plugins.registry import PluginRegistry
 from app.plugins.register_all import register_all_plugins
-from app.services.model_loader import ModelLoader
-from app.chat_memory import get_short_memory
 
 class PlannerAgent:
     def __init__(self):
         self.registry = register_all_plugins()
-        self.model = ModelLoader()
 
-    async def route(self, message: str, session_id: str) -> str:
-        if message.strip().lower().startswith("run "):
-            parts = message.strip().split(maxsplit=2)
-            if len(parts) < 3:
-                return "⚠️ Usage: run <plugin> <input>"
-            plugin_name, input_text = parts[1], parts[2]
-            plugin = self.registry.get(plugin_name)
-            if not plugin:
-                return f"⚠️ Plugin '{plugin_name}' not found"
-            plugin.initialize()
-            result = plugin.run(input_text)
-            plugin.shutdown()
-            return str(result)
+    async def route(self, user_input: str, session_id: str) -> dict:
+        # Try matching a plugin name in the input
+        for name, plugin in self.registry.all().items():
+            if name in user_input.lower():
+                return plugin.run(user_input)
 
-        # ✅ Fallback: use LLM
-        messages = await get_short_memory(session_id)
-        return await self.model.chat(messages)
+        # Fallback to Ollama if no match
+        try:
+            fallback = self.registry.get("ollama_fallback")
+            return fallback.run(user_input)
+        except Exception as e:
+            return {"error": f"Plugin fallback failed: {str(e)}"}

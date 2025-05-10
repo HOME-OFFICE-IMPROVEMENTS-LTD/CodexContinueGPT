@@ -1,9 +1,7 @@
-# app/plugins/tools/shell.py
-
 import subprocess
-from app.brain.core.base import CodexTool  # Corrected import
+from app.brain.core.base import CodexTool
 
-class ShellPlugin(CodexTool):
+class ShellTool(CodexTool):
     name = "shell"
     description = "Run a shell command"
 
@@ -18,10 +16,9 @@ class ShellPlugin(CodexTool):
             return {"error": str(e)}
 
     def run(self, input_text: str) -> dict:
-        # Required to satisfy abstract base class
         return self.execute(input_text)
 
     def shutdown(self):
         print("Shell plugin shutdown")
 
-tool = ShellPlugin()
+tool = ShellTool()

@@ -1,0 +1,68 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE_PATH:-Dockerfile}
+      args:
+        - ENV=${ENV:-production}
+    container_name: codex-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=${ENV:-production}
+      - REDIS_URL=redis://redis:6379
+      - SQLITE_DB_PATH=/app/app/db/chat_memory.db
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - PYTHONPATH=${PYTHONPATH:-/app}
+    volumes:
+      # In development, we mount the code for hot reload
+      # In production, comment out this line to use the containerized code
+      - ${MOUNT_CODE:-./scripts:/app/scripts}
+    command: >
+      bash -c "PYTHONPATH=/app python app/db/init_db.py && PYTHONPATH=/app uvicorn app.main:app --host 0.0.0.0 --port 8000 ${RELOAD:---reload}"
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - codexnet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: codex-frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - codexnet
+
+  redis:
+    image: redis:7
+    container_name: codex-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - codexnet
+
+  ollama:
+    image: ollama/ollama
+    container_name: codex-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - codexnet
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+
+networks:
+  codexnet:
+    driver: bridge

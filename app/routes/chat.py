@@ -24,10 +24,13 @@ async def chat_endpoint(payload: ChatRequest):
         # 🔁 Route through planner agent (plugin or fallback)
         reply = await planner.route(payload.message, payload.session_id)
 
-        # 🧠 Add assistant reply to memory
-        await add_message(payload.session_id, "assistant", reply)
+        # 🔒 Ensure reply is stored as string in DB
+        reply_text = reply["output"] if isinstance(reply, dict) and "output" in reply else str(reply)
 
-        return {"reply": reply}
+        # 🧠 Add assistant reply to memory
+        await add_message(payload.session_id, "assistant", reply_text)
+
+        return {"reply": reply_text}
 
     except OpenAIError as e:
         raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")

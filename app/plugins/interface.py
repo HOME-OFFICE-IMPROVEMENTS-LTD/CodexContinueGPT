@@ -1,20 +1,22 @@
-# app/plugins/interface.py
-
 from abc import ABC, abstractmethod
 
 class PluginInterface(ABC):
     @abstractmethod
     def initialize(self):
-        """Initialize the plugin."""
         pass
 
     @abstractmethod
     def execute(self, data):
-        """Execute the plugin's main functionality."""
         pass
 
     @abstractmethod
     def shutdown(self):
-        """Clean up resources before shutting down the plugin."""
         pass
 
+# CodexTool inherits the PluginInterface and adds a `name` + `description` + optional `run`
+class CodexTool(PluginInterface):
+    name: str
+    description: str
+
+    def run(self, input_text: str) -> dict:
+        return self.execute(input_text)
