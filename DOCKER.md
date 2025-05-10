@@ -83,3 +83,21 @@ Environment variables can be customized in the `.env` file or through `.env.deve
 3. **Container build issues**
    - Use `docker-compose build --no-cache` to rebuild without cache
    - Check logs with `docker-compose logs [service_name]`
+
+4. **API Connection Errors**
+   - If the frontend can't connect to the backend, check that:
+     - Both containers are running: `docker-compose ps`
+     - Backend container logs don't show startup errors: `docker-compose logs backend`
+     - Environment variables BACKEND_HOST and BACKEND_PORT are set correctly in .env
+     - Try accessing the backend directly: `curl http://localhost:8000/health`
+     - In Docker environments, frontend should use `backend` as the host, not `localhost`
+
+5. **Service Discovery Issues**
+   - Ensure all containers are on the same network: `docker network inspect codexcontinuegpt_codexnet`
+   - Try restarting just the problematic container: `docker-compose restart [service_name]`
+   - If network issues persist, try recreating the network: `docker-compose down && docker-compose up -d`
+
+6. **Data Persistence Issues**
+   - Check Redis connection: `docker-compose exec redis redis-cli ping` (should return PONG)
+   - Verify database file exists: `docker-compose exec backend ls -la /app/app/db/chat_memory.db`
+   - If database is corrupted, you can reset it: `docker-compose exec backend python app/db/init_db.py`

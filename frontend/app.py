@@ -6,13 +6,19 @@ from datetime import datetime
 import json
 
 # Configuration
-BACKEND_BASE_URL = "http://localhost:8000"  # Move to config file/environment variables
+# Try to connect to local development server if running outside Docker
+import os
+BACKEND_HOST = os.environ.get("BACKEND_HOST", "localhost") 
+BACKEND_PORT = os.environ.get("BACKEND_PORT", "8000")  # Using the default backend port 8000
+BACKEND_BASE_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
+
 ENDPOINTS = {
     "chat": f"{BACKEND_BASE_URL}/chat",
     "plugins": f"{BACKEND_BASE_URL}/plugins",
     "plugin_exec": f"{BACKEND_BASE_URL}/plugins/execute",
     "sessions": f"{BACKEND_BASE_URL}/sessions",
-    "memory_audit": f"{BACKEND_BASE_URL}/memory/audit"
+    "memory_audit": f"{BACKEND_BASE_URL}/memory/audit",
+    "health": f"{BACKEND_BASE_URL}/health"
 }
 
 # Session Management
@@ -42,12 +48,23 @@ def configure_ui():
 # API Helpers
 def safe_api_call(url, method="GET", payload=None):
     try:
+        st.info(f"Connecting to {url}")
         if method == "GET":
             response = requests.get(url, timeout=10)
         else:
             response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         return response.json()
+    except requests.exceptions.ConnectionError as e:
+        st.error(f"Connection Error: Could not connect to backend at {url}. Check if backend is running and BACKEND_HOST ({BACKEND_HOST}) is correct.")
+        st.info(f"Backend URL configuration: {BACKEND_BASE_URL}")
+        return None
+    except requests.exceptions.Timeout:
+        st.error(f"Timeout Error: Backend at {url} did not respond within timeout period.")
+        return None
+    except requests.exceptions.HTTPError as e:
+        st.error(f"HTTP Error: {str(e)}")
+        return None
     except requests.exceptions.RequestException as e:
         st.error(f"API Error: {str(e)}")
         return None
@@ -77,6 +94,18 @@ def render_sidebar():
         col1.metric("Session ID", st.session_state.session_id[:8])
         col2.metric("Started", st.session_state.session_start.split("T")[0])
         
+        # Backend connection info
+        st.info(f"Connecting to backend at: {BACKEND_BASE_URL}")
+        
+        # Backend health check
+        if st.button("🔄 Check Backend Connection"):
+            health_data = safe_api_call(ENDPOINTS["health"])
+            if health_data:
+                st.success(f"✅ Connected to backend")
+                st.info(f"Backend time: {health_data['server_time']}")
+            else:
+                st.error("❌ Backend connection failed")
+                
         # Debug Info (hidden by default)
         if st.checkbox("Show debug info"):
             st.json({

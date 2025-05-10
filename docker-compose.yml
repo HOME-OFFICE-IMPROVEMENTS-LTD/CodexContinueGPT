@@ -34,6 +34,9 @@ services:
     container_name: codex-frontend
     ports:
       - "8501:8501"
+    environment:
+      - BACKEND_HOST=${BACKEND_HOST:-backend}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
     volumes:
       - ./frontend:/app
     depends_on:
