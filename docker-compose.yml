@@ -6,6 +6,14 @@ services:
       args:
         - ENV=${ENV:-production}
     container_name: codex-backend
+    restart: unless-stopped  # Keep trying to restart if it crashes
+    command: ["bash", "/app/scripts/docker-entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s  # Increased to allow more time for startup
     ports:
       - "8000:8000"
     environment:
@@ -15,12 +23,22 @@ services:
       - SQLITE_DB_PATH=/app/app/db/chat_memory.db
       - OLLAMA_BASE_URL=http://ollama:11434
       - PYTHONPATH=${PYTHONPATH:-/app}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_PRO_MONTHLY_PRICE_ID=${STRIPE_PRO_MONTHLY_PRICE_ID:-}
+      - STRIPE_PRO_ANNUAL_PRICE_ID=${STRIPE_PRO_ANNUAL_PRICE_ID:-}
+      - STRIPE_BUSINESS_MONTHLY_PRICE_ID=${STRIPE_BUSINESS_MONTHLY_PRICE_ID:-}
+      - STRIPE_BUSINESS_ANNUAL_PRICE_ID=${STRIPE_BUSINESS_ANNUAL_PRICE_ID:-}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-supersecretjwtkey}
+      - PASSWORD_SALT=${PASSWORD_SALT:-securepasswordsalt}
+      # Stripe CLI settings
+      - INSTALL_STRIPE_CLI=${INSTALL_STRIPE_CLI:-true}
     volumes:
-      # In development, we mount the code for hot reload
-      # In production, comment out this line to use the containerized code
-      - ${MOUNT_CODE:-./scripts:/app/scripts}
-    command: >
-      bash -c "PYTHONPATH=/app python app/db/init_db.py && PYTHONPATH=/app uvicorn app.main:app --host 0.0.0.0 --port 8000 ${RELOAD:---reload}"
+      # In development, mount the entire code directory for debugging
+      - .:/app
+      # If you're using the Stripe CLI for webhook testing
+      - ${HOME:-/root}/.config/stripe:/root/.config/stripe
     depends_on:
       - redis
       - ollama
@@ -32,6 +50,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: codex-frontend
+    command: ["/app/run_fixed_app.sh"]
     ports:
       - "8501:8501"
     environment:
