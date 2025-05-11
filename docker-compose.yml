@@ -50,7 +50,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: codex-frontend
-    command: ["/app/run_fixed_app.sh"]
+    # Using the default CMD from Dockerfile to run app.py
+    # command: ["/app/run_fixed_app.sh"]
     ports:
       - "8501:8501"
     environment:

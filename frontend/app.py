@@ -814,20 +814,24 @@ def render_chat_interface():
         st.markdown("---")
         # Input column layout
         col1, col2 = st.columns([6, 1])            # Simplified chat input using Streamlit's chat_input
-            # This properly handles the clearing of input after submission
-            if user_input := st.chat_input(f"Message {model_short_name}..."):
-                # Check message limit for free/pro tiers
-                if st.session_state.user_tier in ["free", "pro"]:
-                    daily_limit = SUBSCRIPTION_TIERS[st.session_state.user_tier]["limits"]["messages_per_day"]
-                    if daily_limit > 0 and st.session_state.message_count >= daily_limit:
-                        st.error(f"You've reached your daily message limit ({daily_limit}). Upgrade to continue chatting.")
-                        st.info("Tip: This is a demo - you can switch plans in the sidebar.")
-                    else:
-                        # Process the message
-                        handle_chat_submission(user_input)
+        
+        # Get model short name for display
+        model_short_name = format_model_name(st.session_state.selected_model).split()[0]
+        
+        # This properly handles the clearing of input after submission
+        if user_input := st.chat_input(f"Message {model_short_name}..."):
+            # Check message limit for free/pro tiers
+            if st.session_state.user_tier in ["free", "pro"]:
+                daily_limit = SUBSCRIPTION_TIERS[st.session_state.user_tier]["limits"]["messages_per_day"]
+                if daily_limit > 0 and st.session_state.message_count >= daily_limit:
+                    st.error(f"You've reached your daily message limit ({daily_limit}). Upgrade to continue chatting.")
+                    st.info("Tip: This is a demo - you can switch plans in the sidebar.")
                 else:
-                    # Process the message for business tier
+                    # Process the message
                     handle_chat_submission(user_input)
+            else:
+                # Process the message for business tier
+                handle_chat_submission(user_input)
             
         with col1:
             # This section is now handled by st.chat_input above
@@ -846,8 +850,7 @@ def render_chat_interface():
                         </div>
                     """, unsafe_allow_html=True)
             
-            # Send button with model indicator
-            model_short_name = format_model_name(st.session_state.selected_model).split()[0]
+            # Use model name for button label (already defined above)
             send_button_label = f"Send ({model_short_name})"
             
             send_message = st.button(
