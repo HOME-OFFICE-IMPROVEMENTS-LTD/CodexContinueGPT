@@ -64,8 +64,15 @@ Key resources for future reference:
    - Moved the variable definition higher in the code to ensure availability when needed
    - Removed redundant second definition of the same variable
 
-3. **Docker Configuration**
+3. **Submit Callback Function Error**
+   - Fixed error with undefined `submit_callback` reference
+   - Removed send button that was using the callback
+   - Replaced with informative display showing which model is being used
+   - This approach complements the native `st.chat_input()` which handles submission automatically
+
+4. **Docker Configuration**
    - Updated docker-compose.yml to use the fixed app.py directly
    - Commented out the fallback script while maintaining the option to revert if needed
+   - Rebuilt the container to ensure latest code changes were applied
 
 These additional fixes ensure the application can run properly from the main app.py file without needing to rely on the fallback implementations.

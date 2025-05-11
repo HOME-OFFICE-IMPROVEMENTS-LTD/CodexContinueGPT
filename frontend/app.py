@@ -850,16 +850,14 @@ def render_chat_interface():
                         </div>
                     """, unsafe_allow_html=True)
             
-            # Use model name for button label (already defined above)
-            send_button_label = f"Send ({model_short_name})"
-            
-            send_message = st.button(
-                send_button_label,
-                key="send_chat",
-                on_click=submit_callback,
-                use_container_width=True,
-                help=f"Using {format_model_name(st.session_state.selected_model)}"
-            )
+            # Model indicator display (no button needed as chat_input handles submission)
+            st.markdown(f"""
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <span style="font-size: 0.8em; color: #4f46e5; font-weight: bold;">
+                        Using {format_model_name(st.session_state.selected_model)}
+                    </span>
+                </div>
+            """, unsafe_allow_html=True)
             
     with mode_tabs[1]:  # Plugins tab
         render_plugin_interface()
