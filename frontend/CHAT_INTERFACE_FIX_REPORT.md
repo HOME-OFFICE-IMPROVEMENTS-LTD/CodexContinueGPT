@@ -75,4 +75,13 @@ Key resources for future reference:
    - Commented out the fallback script while maintaining the option to revert if needed
    - Rebuilt the container to ensure latest code changes were applied
 
+5. **Memory Audit Tool Fix**
+   - Fixed connection issues in the Memory Audit page
+   - Updated backend URL configuration to use environment variables instead of hardcoded localhost
+   - Added dropdown selection for available sessions
+   - Improved error handling with informative error messages
+   - Enhanced the display with better formatting, tabs, and expandable sections
+   - Added navigation buttons between Memory Audit and main chat interface
+   - Added "Copy Session ID" button for easier sharing
+
 These additional fixes ensure the application can run properly from the main app.py file without needing to rely on the fallback implementations.

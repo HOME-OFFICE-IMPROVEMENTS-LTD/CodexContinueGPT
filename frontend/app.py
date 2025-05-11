@@ -1092,7 +1092,18 @@ def render_plugin_interface():
 # Memory Audit Handler
 def render_memory_audit():
     """Render the memory audit visualization"""
-    st.subheader("🧠 Memory Timeline")
+    # Header with link to full Memory Audit page
+    col1, col2 = st.columns([3, 1])
+    col1.subheader("🧠 Memory Timeline")
+    with col2:
+        st.markdown("""
+        <a href="/Memory_Audit" target="_self">
+            <button style="background-color: #4f46e5; color: white; border: none; 
+            border-radius: 4px; padding: 8px 16px; cursor: pointer; width: 100%;">
+            Full Memory Audit
+            </button>
+        </a>
+        """, unsafe_allow_html=True)
     
     # Get session memory
     memory_data = safe_api_call(f"{ENDPOINTS['memory_audit']}/{st.session_state.session_id}")
