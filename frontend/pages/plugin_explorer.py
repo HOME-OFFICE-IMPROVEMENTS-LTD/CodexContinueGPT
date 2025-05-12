@@ -1,5 +1,14 @@
 # frontend/pages/plugin_explorer.py
 import streamlit as st
+
+# Page config MUST be the first Streamlit command
+st.set_page_config(
+    page_title="🔍 Plugin Explorer", 
+    page_icon="🧩", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import requests
 from datetime import datetime
 import json
@@ -133,13 +142,6 @@ def render_sidebar():
             st.json(st.session_state.get('execution_history', []))
 
 def main():
-    st.set_page_config(
-        page_title="🔍 Plugin Explorer", 
-        page_icon="🧩", 
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-    
     inject_custom_css()
     st.title("🧩 Plugin Explorer")
     st.caption("Browse and execute available plugins")
