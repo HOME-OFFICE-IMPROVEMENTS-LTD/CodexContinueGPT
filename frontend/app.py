@@ -33,6 +33,7 @@ ENDPOINTS = {
     "health": f"{BACKEND_BASE_URL}/health",
     "models": f"{BACKEND_BASE_URL}/models",  # For multi-LLM support
     "status": f"{BACKEND_BASE_URL}/status",  # Backend status
+    "analytics": f"{BACKEND_BASE_URL}/analytics",  # Analytics data
     "auth": {
         "login": f"{BACKEND_BASE_URL}/auth/login",
         "register": f"{BACKEND_BASE_URL}/auth/register",
@@ -382,6 +383,11 @@ def stream_chat_response(user_input, model=None):
 
 def show_connection_error(url):
     """Display formatted connection error with troubleshooting tips"""
+    # Create a unique identifier for this error instance
+    if "connection_error_counter" not in st.session_state:
+        st.session_state.connection_error_counter = 0
+    st.session_state.connection_error_counter += 1
+    
     st.error("🔌 Connection Error")
     st.error(f"Could not connect to backend at {url}")
     
@@ -396,8 +402,9 @@ def show_connection_error(url):
         st.markdown("3. ✅ In Docker, frontend should use `backend` as host, not `localhost`")
         st.markdown("4. ✅ Run diagnostics: `./scripts/test_docker_config.sh`")
         
-        # Using a unique key for each retry button based on the URL
-        if st.button("Retry Connection", key=f"retry_connection_{url.replace(':', '_').replace('/', '_')}"):
+        # Using a unique key with counter for each retry button
+        unique_key = f"retry_connection_{url.replace(':', '_').replace('/', '_')}_{st.session_state.connection_error_counter}"
+        if st.button("Retry Connection", key=unique_key):
             with st.spinner("Retrying connection..."):
                 try:
                     response = requests.get(ENDPOINTS["health"], timeout=5)
@@ -499,6 +506,24 @@ def render_sidebar():
             tier_name=SUBSCRIPTION_TIERS[st.session_state.user_tier]["name"]
         ), unsafe_allow_html=True)
         
+        # Check OpenAI API key status
+        try:
+            models_response = safe_api_call(ENDPOINTS["models"], show_spinner=False) or {"api_key_configured": False}
+            api_key_configured = models_response.get("api_key_configured", False)
+            
+            if not api_key_configured:
+                with st.expander("⚠️ OpenAI API Key Required", expanded=True):
+                    st.warning("You need to set up an OpenAI API key for the AI to work properly.")
+                    st.markdown("""
+                    **Setup Instructions**:
+                    1. Get an API key from [OpenAI Platform](https://platform.openai.com/account/api-keys)
+                    2. Run `./scripts/setup_openai_key.sh` in your terminal
+                    3. Restart the backend service with `docker-compose restart backend`
+                    """)
+        except:
+            # Silently ignore errors - we don't want to break the UI if this check fails
+            pass
+            
         # LLM Model Selection Section
         st.subheader("🤖 AI Model")
         
@@ -988,7 +1013,23 @@ def handle_chat_submission(user_input):
             if response:
                 # Add to chat history
                 add_message_to_history("user", processed_input)
-                add_message_to_history("assistant", response.get("reply", "Error: No reply received"))
+                
+                reply = response.get("reply", "Error: No reply received")
+                
+                # Check if the reply indicates an OpenAI API key issue
+                if "OpenAI API key" in reply or "I need a valid OpenAI API key" in reply or \
+                   reply == "I'm sorry, I don't have enough information to answer that question.":
+                    # Show helpful message with setup instructions
+                    reply = "I need an OpenAI API key to work properly. Please follow these setup instructions:\n\n" + \
+                           "**Setup Instructions**:\n" + \
+                           "1. Get an API key from [OpenAI Platform](https://platform.openai.com/account/api-keys)\n" + \
+                           "2. Run `./scripts/setup_openai_key.sh` in your terminal\n" + \
+                           "3. Restart the backend service with `docker-compose restart backend`"
+                    
+                    # Show warning in the UI
+                    st.warning("⚠️ OpenAI API key is missing or invalid. Check the response for setup instructions.")
+                
+                add_message_to_history("assistant", reply)
 
 # Plugin Mode Handler
 def render_plugin_interface():

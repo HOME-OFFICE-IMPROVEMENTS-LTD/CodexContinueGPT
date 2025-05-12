@@ -9,16 +9,23 @@
 
 2. Improved OpenAI API key handling and detection
 
-3. Created comprehensive documentation:
+3. Fixed StreamlitDuplicateElementKey error:
+   - Modified show_connection_error() function to ensure unique keys
+   - Added counter-based key generation in session state
+   - Prevented crashes when backend is unavailable
+
+4. Created comprehensive documentation:
    - General best practices for Streamlit development
    - API Key configuration guide
    - Specific fix documentation
+   - Element key best practices guide
 
 ## Important Files
 
 - `frontend/pages/3_Analytics_Dashboard.py`: Fixed duplicate st.set_page_config() call
 - `frontend/pages/plugin_explorer.py`: Moved page config to the top
 - `frontend/pages/7_API_Keys.py`: Fixed page config order
+- `frontend/app.py`: Added unique key generation to prevent duplicate key errors
 - `docs/FIXES_Streamlit_and_API_Keys.md`: Detailed fix documentation
 - `docs/API_Key_Configuration.md`: Comprehensive API key setup guide
 - `docs/Analytics_Dashboard_Fix.md`: Analytics Dashboard fix details

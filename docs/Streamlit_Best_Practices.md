@@ -147,3 +147,77 @@ If changes aren't showing up:
 1. Clear browser cache
 2. Restart the Streamlit server
 3. Use `?cache=false` in the URL
+
+## Element Keys
+
+### Unique Keys for UI Elements
+
+When creating interactive UI elements like buttons, inputs, or selectors that require keys:
+
+```python
+# WRONG: Using non-unique keys
+if st.button("Submit", key="submit_button"):
+    # Button code
+
+# Multiple buttons with the same key will cause errors
+if st.button("Another Action", key="submit_button"):  # ERROR - Duplicate key
+    # Button code
+
+# RIGHT: Using unique keys
+if st.button("Submit", key="submit_button"):
+    # Button code
+
+if st.button("Another Action", key="another_action_button"):
+    # Button code
+```
+
+### Dynamic Keys for Generated Elements
+
+When dynamically generating UI elements (e.g., in loops or functions called multiple times):
+
+```python
+# WRONG: Using the same key pattern for all items in a loop
+for i, item in enumerate(items):
+    if st.button(f"Select {item}", key="item_button"):  # ERROR - Same key used multiple times
+        selected_item = item
+
+# RIGHT: Incorporating a unique identifier into each key
+for i, item in enumerate(items):
+    if st.button(f"Select {item}", key=f"item_button_{i}"):
+        selected_item = item
+```
+
+### Keys in Error Handlers or Repeated Function Calls
+
+For UI elements in functions that might be called multiple times (like error handlers):
+
+```python
+# WRONG: Same keys used when function is called multiple times
+def show_error(message):
+    st.error(message)
+    if st.button("Retry", key="retry_button"):  # ERROR if function called twice
+        retry_action()
+
+# RIGHT: Use session state to ensure unique keys
+def show_error(message):
+    if "error_counter" not in st.session_state:
+        st.session_state.error_counter = 0
+    st.session_state.error_counter += 1
+    
+    st.error(message)
+    if st.button("Retry", key=f"retry_button_{st.session_state.error_counter}"):
+        retry_action()
+```
+
+### Common Key Errors
+
+1. **Duplicate Keys in Dynamic Content:**
+   ```
+   streamlit.errors.StreamlitDuplicateElementKey: There are multiple elements with the same key='...'
+   ```
+
+2. **Using URLs Directly as Keys:**
+   Avoid using only URLs as keys without additional uniqueness, especially in error handlers.
+
+3. **Non-String Keys:**
+   Keys should be strings. If using objects or numbers, convert them to strings.
